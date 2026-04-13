@@ -3,39 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Canal de Ética | Respeito ao Capital Humano</title>
+    <title>Enterprise RCH | Auditoria 360 & NR-1</title>
     
-    <!-- Bibliotecas de Interface -->
+    <!-- Frameworks e Bibliotecas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Firebase -->
+    <!-- Firebase e QR Code -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; margin: 0; }
-        .glass { background: rgba(255, 255, 255, 0.98); border-radius: 2.5rem; padding: 2.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        .input-rch { width: 100%; padding: 1.25rem; background: #f1f5f9; border-radius: 1.25rem; border: 2px solid transparent; font-weight: 700; color: #0f172a; text-transform: uppercase; outline: none; transition: all 0.2s; font-size: 16px; }
-        .input-rch:focus { border-color: #2563eb; background: white; }
-        .btn-rch { width: 100%; background: #2563eb; color: white; font-weight: 800; padding: 1.25rem; border-radius: 1.25rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s; cursor: pointer; border: none; }
-        .btn-rch:active { transform: scale(0.95); opacity: 0.9; }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #0f172a; 
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.98); 
+            border-radius: 2.5rem; 
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            color: #1e293b;
+        }
+
+        .input-rch { 
+            width: 100%; 
+            padding: 1.1rem; 
+            background-color: #f1f5f9; 
+            border-radius: 1rem; 
+            border: 2px solid transparent; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            outline: none; 
+            color: #0f172a;
+            transition: all 0.2s;
+        }
+
+        .input-rch:focus { border-color: #2563eb; background-color: white; }
+
+        .btn-rch { 
+            background-color: #2563eb; 
+            color: white; 
+            font-weight: 800; 
+            padding: 1rem; 
+            border-radius: 1rem; 
+            text-transform: uppercase; 
+            transition: all 0.2s; 
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-rch:active { transform: scale(0.96); }
+
+        /* Selos de Validação */
+        .selo-validador {
+            background: linear-gradient(135deg, #065f46, #059669);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Configuração de Impressão de Relatórios */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; padding: 0 !important; }
+            .glass-card { box-shadow: none !important; border: 1px solid #000 !important; border-radius: 0 !important; padding: 0 !important; }
+            .report-box { border: 2px solid #000 !important; padding: 30px !important; margin-bottom: 40px !important; page-break-inside: avoid; background: white !important; }
+            .signature-line { border-top: 2px solid #000; width: 280px; text-align: center; margin-top: 60px; font-weight: bold; font-size: 10px; }
+            .print-only { display: block !important; }
+        }
+
+        .print-only { display: none; }
+
         .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-slate-900 min-h-screen">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-        const { Shield, Search, ChevronRight, CheckCircle, ShieldCheck, X, Trash2, Lock, Building2 } = lucide;
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { 
+            Shield, Search, ChevronRight, CheckCircle, ShieldCheck, 
+            X, Trash2, Lock, Building2, Printer, QrCode, 
+            Calendar, GraduationCap, Gavel, UserCheck, UserX, FileText, Scale, FolderPlus, FolderOpen, ChevronDown, ChevronUp
+        } = lucide;
 
+        // Configurações Firebase (Conforme solicitado para artifacts/respeito-capital-humano-df)
         const firebaseConfig = {
             authDomain: "respeito-capital-humano-df.firebaseapp.com",
             projectId: "respeito-capital-humano-df",
@@ -53,178 +131,582 @@
             const [view, setView] = useState('loading');
             const [companies, setCompanies] = useState([]);
             const [reports, setReports] = useState([]);
+            const [folders, setFolders] = useState([]);
             const [search, setSearch] = useState('');
             const [activeCompany, setActiveCompany] = useState(null);
             const [adminPass, setAdminPass] = useState('');
             const [loading, setLoading] = useState(false);
+            const [adminTab, setAdminTab] = useState('reports');
+            const [protocolCode, setProtocolCode] = useState('');
+            const [qrTarget, setQrTarget] = useState(null);
+            
+            // Estados de Formulário
+            const [isIdentified, setIsIdentified] = useState(false);
+            const [hasWitnesses, setHasWitnesses] = useState(false);
+            const [expandedCompany, setExpandedCompany] = useState(null);
 
             useEffect(() => {
-                auth.signInAnonymously().then(() => {
-                    db.collection(`${DATA_PATH}/companies`).onSnapshot(snap => {
-                        setCompanies(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                const initialize = async () => {
+                    try {
+                        await auth.signInAnonymously();
+                        
+                        // Listeners em Tempo Real
+                        db.collection(`${DATA_PATH}/companies`).onSnapshot(snap => {
+                            setCompanies(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                            setView('welcome');
+                        });
+
+                        db.collection(`${DATA_PATH}/reports`).onSnapshot(snap => {
+                            setReports(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                        });
+
+                        db.collection(`${DATA_PATH}/folders`).onSnapshot(snap => {
+                            setFolders(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                        });
+                    } catch (e) {
                         setView('welcome');
-                    }, () => setView('welcome'));
-                    db.collection(`${DATA_PATH}/reports`).onSnapshot(snap => {
-                        setReports(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                    });
-                }).catch(() => setView('welcome'));
+                    }
+                };
+                initialize();
             }, []);
 
-            const filtered = useMemo(() => {
+            // Busca Cega: Só mostra resultados se houver busca ativa (privacidade)
+            const searchResults = useMemo(() => {
                 const t = search.toLowerCase().trim();
-                return t ? companies.filter(c => c.name.toLowerCase().includes(t)) : [];
+                if (t.length < 2) return [];
+                return companies.filter(c => c.name.toLowerCase().includes(t));
             }, [search, companies]);
 
-            const handleReport = async (e) => {
+            const generateProtocol = () => 'RCH-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+            const handleReportSubmit = async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 const fd = new FormData(e.target);
+                const protocol = generateProtocol();
+                
                 try {
                     await db.collection(`${DATA_PATH}/reports`).add({
-                        empresa: activeCompany.name,
+                        protocolo: protocol,
+                        empresaName: activeCompany.name,
+                        empresaId: activeCompany.id,
                         unidade: fd.get('unidade'),
+                        dataOcorrencia: fd.get('dataOcorrencia'),
+                        identidade: isIdentified ? 'IDENTIFICADO' : 'ANÓNIMO',
+                        nomeRelator: fd.get('nomeRelator') || 'CONFIDENCIAL',
                         relato: fd.get('relato'),
-                        contato: fd.get('contato') || 'Anónimo',
+                        testemunhas: hasWitnesses ? 'SIM' : 'NÃO',
+                        nomesTestemunhas: fd.get('nomesTestemunhas') || 'NENHUMA',
+                        contato: fd.get('contato') || 'NENHUM',
+                        status: 'ABERTO',
+                        folderId: 'default',
+                        dataProtocolo: new Date().toISOString(),
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
+                    setProtocolCode(protocol);
                     setView('success');
-                } catch (e) { alert("Erro ao enviar."); }
+                } catch (e) { alert("Erro de conexão. Tente novamente."); }
                 setLoading(false);
             };
 
+            const updateReportData = async (id, data) => {
+                await db.collection(`${DATA_PATH}/reports`).doc(id).update(data);
+            };
+
+            const showQR = (company) => {
+                setQrTarget(company);
+                setTimeout(() => {
+                    const el = document.getElementById("qr-box");
+                    if (el) {
+                        el.innerHTML = "";
+                        new QRCode(el, {
+                            text: window.location.href,
+                            width: 200,
+                            height: 200,
+                            colorDark : "#0f172a",
+                            colorLight : "#ffffff"
+                        });
+                    }
+                }, 100);
+            };
+
+            // --- TELAS ---
+
             if (view === 'loading') return (
-                <div className="h-screen flex flex-col items-center justify-center text-white px-6">
+                <div className="h-screen flex flex-col items-center justify-center text-white">
                     <Shield size={64} className="text-blue-500 animate-bounce mb-6" />
-                    <p className="font-black uppercase tracking-[0.4em] text-[10px] opacity-50 italic">Carregando Portal RCH...</p>
+                    <p className="font-black uppercase tracking-[0.4em] text-[10px] opacity-40">Ativando Portais RCH...</p>
                 </div>
             );
 
+            // TELA INICIAL (FUNCIONÁRIO)
             if (view === 'welcome') return (
-                <div className="min-h-screen flex items-center justify-center p-6 animate-fade text-center leading-none">
-                    <div className="max-w-xl w-full glass relative z-10 border border-white/20">
-                        <div className="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-xl shadow-blue-500/20 leading-none">
-                            <Shield size={40} />
-                        </div>
-                        <h1 className="text-2xl font-black uppercase italic tracking-tighter leading-none text-slate-900">Respeito ao Capital Humano</h1>
-                        <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest mt-2 mb-10 italic leading-none">Auditoria Independente</p>
+                <div className="min-h-screen flex items-center justify-center p-6 animate-fade no-print">
+                    <div className="max-w-2xl w-full glass-card text-center relative overflow-hidden">
+                        <div className="absolute -right-16 -top-16 opacity-5"><Shield size={250} /></div>
                         
+                        <div className="flex justify-center gap-4 mb-8">
+                            <div className="selo-validador">
+                                <Scale size={16} /> NR-1 VALIDADA (Item 1.4.1 g)
+                            </div>
+                            <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase shadow-lg flex items-center gap-2">
+                                <ShieldCheck size={16} /> CERTIFICADO RCH
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-600 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-white shadow-2xl">
+                            <Shield size={48} />
+                        </div>
+                        
+                        <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900 leading-none mb-4">Respeito ao Capital Humano</h1>
+                        
+                        <div className="bg-slate-50 p-6 rounded-3xl mb-10 border-l-4 border-emerald-500 text-left">
+                            <p className="text-[10px] font-black uppercase text-emerald-600 mb-2 italic tracking-widest leading-none">Fundamento Legal NR-1:</p>
+                            <p className="text-[11px] font-bold text-slate-500 leading-relaxed italic">
+                                "O empregador deve estabelecer mecanismos para que os trabalhadores participem da gestão de segurança e saúde no trabalho, comunicando situações de riscos."
+                            </p>
+                        </div>
+
                         <div className="text-left space-y-4">
-                            <label className="text-[10px] font-black uppercase text-slate-400 italic ml-4 leading-none">Encontre a sua empresa:</label>
-                            <input type="text" placeholder="Nome da empresa..." className="input-rch shadow-sm" value={search} onChange={e => setSearch(e.target.value)} />
-                            {search && (
-                                <div className="bg-white border rounded-2xl shadow-xl p-2 max-h-48 overflow-y-auto mt-2">
-                                    {filtered.length > 0 ? filtered.map(c => (
-                                        <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full flex items-center justify-between p-5 rounded-2xl hover:bg-blue-600 hover:text-white transition-all text-left font-bold uppercase text-sm group leading-none">
-                                            <div className="flex items-center gap-3">
-                                                <Building2 size={18} className="opacity-20 group-hover:opacity-100" />
-                                                {c.name}
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex items-center gap-2">
+                                <Search size={14} /> Digite o nome da empresa para abrir o canal
+                            </label>
+                            <div className="relative">
+                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                                <input 
+                                    type="text" 
+                                    placeholder="Pesquisar..." 
+                                    className="input-rch pl-14 shadow-lg border-slate-100" 
+                                    value={search} 
+                                    onChange={e => setSearch(e.target.value)} 
+                                />
+                            </div>
+                            
+                            <div className="space-y-3">
+                                {searchResults.map(c => (
+                                    <button 
+                                        key={c.id} 
+                                        onClick={() => { setActiveCompany(c); setView('form'); }}
+                                        className="w-full bg-white border border-slate-100 p-6 rounded-3xl flex items-center justify-between hover:bg-blue-600 hover:text-white transition-all shadow-sm group"
+                                    >
+                                        <div className="flex flex-col text-left">
+                                            <span className="font-black uppercase text-sm">{c.name}</span>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-[8px] font-black group-hover:bg-white/20 group-hover:text-white uppercase tracking-widest">Canal Auditoria Ativo</div>
                                             </div>
-                                            <ChevronRight size={18} />
-                                        </button>
-                                    )) : <div className="p-8 text-center text-slate-400 font-bold italic text-xs uppercase leading-none">Não registada</div>}
-                                </div>
-                            )}
+                                        </div>
+                                        <ChevronRight size={22} className="text-blue-600 group-hover:text-white" />
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <div className="mt-14 pt-8 border-t border-slate-100 flex justify-center items-center gap-3">
-                            <ShieldCheck size={22} className="text-blue-600" />
-                            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none italic">Protocolo Blindado RCH</span>
+
+                        <div className="mt-14 pt-8 border-t border-slate-100">
+                            <button onClick={() => setView('admin-login')} className="text-[10px] font-black text-slate-300 uppercase tracking-widest hover:text-blue-600 italic">Gestão de Auditoria Independente</button>
                         </div>
-                        <button onClick={() => setView('admin-login')} className="mt-12 text-[9px] font-black text-slate-300 uppercase tracking-widest hover:text-blue-600 italic">Área Administrativa</button>
                     </div>
                 </div>
             );
 
+            // FORMULÁRIO DE DENÚNCIA (FUNCIONÁRIO)
             if (view === 'form') return (
-                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 md:p-10 animate-fade text-left leading-none">
-                    <div className="max-w-xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden text-slate-900 border border-slate-200">
-                        <header className="bg-slate-900 p-8 text-white flex justify-between items-center leading-none">
+                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 md:p-10 animate-fade no-print">
+                    <div className="max-w-2xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden text-slate-900 border border-slate-200">
+                        <header className="bg-slate-900 p-8 text-white flex justify-between items-center">
                             <div className="text-left leading-none">
-                                <h2 className="text-lg font-black uppercase leading-none italic tracking-tight">{activeCompany.name}</h2>
-                                <p className="text-[9px] font-bold text-blue-400 uppercase mt-2 tracking-widest leading-none italic">Relato Seguro</p>
+                                <h2 className="text-xl font-black uppercase italic tracking-tight">{activeCompany.name}</h2>
+                                <p className="text-[9px] font-bold text-blue-400 uppercase mt-2 tracking-widest italic">Protocolo Ético de SST</p>
                             </div>
                             <button onClick={() => setView('welcome')} className="text-white bg-white/10 p-2 rounded-xl"><X size={24}/></button>
                         </header>
-                        <form onSubmit={handleReport} className="p-8 md:p-12 space-y-8 text-left leading-none">
-                            <div className="text-left">
-                                <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 ml-2 italic tracking-widest leading-none">Unidade / Local *</label>
-                                <input name="unidade" required className="input-rch" placeholder="Ex: Matriz" />
+
+                        <form onSubmit={handleReportSubmit} className="p-8 md:p-12 space-y-8 text-left">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2 ml-2 italic">Unidade / Departamento *</label>
+                                    <input name="unidade" required className="input-rch" placeholder="Ex: Sede" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2 ml-2 italic">Data da Ocorrência *</label>
+                                    <input type="date" name="dataOcorrencia" required className="input-rch" />
+                                </div>
                             </div>
-                            <div className="text-left">
-                                <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 ml-2 italic tracking-widest leading-none">O Seu Relato *</label>
-                                <textarea name="relato" required className="input-rch h-56 normal-case font-medium text-sm leading-relaxed" placeholder="Descreva os factos..."></textarea>
+
+                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
+                                <p className="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Forma de Participação</p>
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setIsIdentified(false)} className={`flex-grow p-4 rounded-xl font-black text-[10px] uppercase transition-all ${!isIdentified ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Anónimo</button>
+                                    <button type="button" onClick={() => setIsIdentified(true)} className={`flex-grow p-4 rounded-xl font-black text-[10px] uppercase transition-all ${isIdentified ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Identificado</button>
+                                </div>
+                                {isIdentified && <input name="nomeRelator" required className="input-rch bg-white" placeholder="O Seu Nome Completo" />}
                             </div>
-                            <div className="text-left">
-                                <label className="text-[10px] font-black uppercase text-blue-600 block mb-3 ml-2 italic tracking-widest leading-none">Contacto (Opcional)</label>
-                                <input name="contato" className="input-rch border-blue-50 bg-blue-50/20" placeholder="WhatsApp ou E-mail" />
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase text-slate-400 block ml-2 italic">Relato do Fato *</label>
+                                <textarea name="relato" required className="input-rch h-48 normal-case font-medium text-sm leading-relaxed" placeholder="Descreva os acontecimentos..."></textarea>
                             </div>
-                            <button type="submit" disabled={loading} className="btn-rch shadow-lg">
-                                {loading ? "ENVIANDO..." : "PROTOCOLAR AGORA"}
+
+                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
+                                <p className="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Testemunhas Visuais?</p>
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setHasWitnesses(true)} className={`flex-grow p-4 rounded-xl font-black text-[10px] uppercase transition-all ${hasWitnesses ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Sim</button>
+                                    <button type="button" onClick={() => setHasWitnesses(false)} className={`flex-grow p-4 rounded-xl font-black text-[10px] uppercase transition-all ${!hasWitnesses ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Não</button>
+                                </div>
+                                {hasWitnesses && <textarea name="nomesTestemunhas" required className="input-rch bg-white h-24 normal-case text-xs" placeholder="Nomes das testemunhas se possível..."></textarea>}
+                            </div>
+
+                            <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 flex items-start gap-4">
+                                <ShieldCheck className="text-emerald-500 shrink-0" size={24} />
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase text-emerald-800">Privacidade LGPD</p>
+                                    <p className="text-[9px] font-medium text-emerald-600 mt-1 leading-relaxed italic">Este canal é gerido de forma independente pela Auditoria RCH. O seu relato é confidencial e protegido nos termos da lei.</p>
+                                </div>
+                            </div>
+
+                            <button type="submit" disabled={loading} className="btn-rch w-full text-lg py-5 shadow-2xl shadow-blue-500/30">
+                                {loading ? "ENVIANDO..." : "PROTOCOLAR RELATO AGORA"}
                             </button>
                         </form>
                     </div>
                 </div>
             );
 
+            // SUCESSO (PROTOCOLO)
             if (view === 'success') return (
-                <div className="h-screen flex flex-col items-center justify-center text-center p-10 text-white animate-fade bg-slate-900 leading-none">
-                    <CheckCircle size={100} className="text-blue-500 mb-8 animate-bounce leading-none" />
-                    <h2 className="text-5xl font-black uppercase italic mb-6 tracking-tighter leading-none">Enviado</h2>
-                    <p className="text-sm opacity-60 mb-14 font-bold uppercase tracking-[0.2em] max-w-xs mx-auto leading-relaxed text-center">Protocolo RCH registado com sucesso.</p>
-                    <button onClick={() => window.location.reload()} className="btn-rch max-w-xs px-16 py-6">Concluir</button>
+                <div className="h-screen flex flex-col items-center justify-center text-center p-10 bg-slate-900 no-print">
+                    <CheckCircle size={100} className="text-blue-500 animate-bounce mb-8" />
+                    <h2 className="text-4xl font-black uppercase italic mb-4 text-white">Recebido</h2>
+                    <p className="text-sm text-slate-400 font-bold uppercase tracking-[0.2em] mb-10">Anote o seu código de protocolo RCH:</p>
+                    <div className="bg-white p-10 rounded-[3rem] mb-14 shadow-2xl scale-110">
+                        <p className="text-5xl font-black text-blue-600 tracking-tighter">{protocolCode}</p>
+                    </div>
+                    <button onClick={() => window.location.reload()} className="btn-rch px-14 py-5 shadow-xl">Finalizar</button>
                 </div>
             );
 
+            // LOGIN AUDITORA
             if (view === 'admin-login') return (
-                <div className="h-screen flex items-center justify-center p-6 text-center animate-fade leading-none">
-                    <div className="max-w-xs w-full glass text-center border border-white/20">
-                        <Lock size={40} className="mx-auto mb-6 text-blue-600 leading-none" />
-                        <h2 className="text-xl font-black uppercase text-slate-900 mb-10 leading-none tracking-tighter">Painel Auditor</h2>
-                        <input type="password" className="input-rch text-center text-4xl mb-10 tracking-widest font-black leading-none" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
-                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Incorreta")} className="btn-rch shadow-lg">Entrar</button>
-                        <button onClick={() => setView('welcome')} className="mt-10 text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Voltar</button>
+                <div className="h-screen flex items-center justify-center p-6 text-center animate-fade no-print">
+                    <div className="max-w-xs w-full glass-card border border-white/20">
+                        <Lock size={40} className="mx-auto mb-6 text-blue-600" />
+                        <h2 className="text-xl font-black uppercase text-slate-900 mb-10">Painel Auditora</h2>
+                        <input type="password" className="input-rch text-center text-4xl mb-10 tracking-[0.4em] font-black" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
+                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Incorreta")} className="btn-rch w-full py-4 text-sm">Entrar no Sistema</button>
+                        <button onClick={() => setView('welcome')} className="mt-8 text-[9px] font-black text-slate-300 uppercase italic">Voltar</button>
                     </div>
                 </div>
             );
 
+            // DASHBOARD ADMINISTRATIVO COMPLETO
             if (view === 'admin-dash') return (
-                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-12 text-left animate-fade leading-none">
-                    <header className="flex flex-col md:flex-row justify-between items-center mb-14 max-w-6xl mx-auto gap-8 text-left leading-none">
-                        <div className="flex items-center gap-5 text-left leading-none">
-                            <div className="bg-slate-900 p-3 rounded-2xl text-white shadow-xl shadow-slate-900/20 leading-none"><Shield size={32} /></div>
+                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-12 animate-fade text-left">
+                    <header className="flex flex-col md:flex-row justify-between items-center mb-10 max-w-7xl mx-auto gap-8 no-print">
+                        <div className="flex items-center gap-5">
+                            <div className="bg-slate-900 p-4 rounded-3xl text-white shadow-xl shadow-slate-900/20"><Shield size={32} /></div>
                             <div className="text-left leading-none">
-                                <h2 className="text-2xl font-black uppercase italic leading-none tracking-tight text-left">Gestão Independente RCH</h2>
-                                <p className="text-[10px] font-bold text-blue-600 uppercase mt-2 tracking-widest leading-none text-left italic">Compliance & Auditoria</p>
+                                <h2 className="text-2xl font-black uppercase italic tracking-tight">Enterprise Auditoria 360</h2>
+                                <p className="text-[10px] font-bold text-blue-600 uppercase mt-2 tracking-widest italic">Consola de Gestão NR-1 | Daiana Freitas</p>
                             </div>
                         </div>
-                        <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 font-black text-[10px] uppercase px-10 py-4 rounded-2xl border border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-sm">Sair</button>
+                        <div className="flex flex-wrap justify-center gap-4">
+                             <button onClick={() => setAdminTab('reports')} className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${adminTab === 'reports' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 shadow-sm'}`}>Pastas de Ocorrências</button>
+                             <button onClick={() => setAdminTab('folders')} className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${adminTab === 'folders' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 shadow-sm'}`}>Gerir Pastas</button>
+                             <button onClick={() => setAdminTab('companies')} className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 shadow-sm'}`}>Empresas & Treinos</button>
+                             <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 font-black text-[10px] px-6 py-3 rounded-2xl border border-red-100 uppercase italic hover:bg-red-600 hover:text-white transition-all">Logout</button>
+                        </div>
                     </header>
-                    <main className="max-w-6xl mx-auto space-y-12">
-                        <div className="bg-white p-10 rounded-[3rem] shadow-xl border-t-8 border-blue-600">
-                            <h3 className="text-[10px] font-black uppercase italic text-slate-400 mb-6 tracking-widest leading-none text-left text-left">Activar Empresa Cliente</h3>
-                            <div className="flex flex-col md:flex-row gap-6">
-                                <input id="nc" className="flex-grow p-5 bg-slate-50 rounded-2xl font-bold uppercase outline-none focus:border-blue-600 border-2 border-transparent shadow-inner text-lg leading-none" placeholder="NOME DA EMPRESA" />
-                                <button onClick={() => { const v = document.getElementById('nc').value; if(v) db.collection(`${DATA_PATH}/companies`).add({name: v.toUpperCase()}); document.getElementById('nc').value = ''; }} className="bg-blue-600 text-white px-14 py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all">Registar Canal</button>
-                            </div>
-                        </div>
-                        <div className="space-y-8 text-left">
-                            <h3 className="text-[10px] font-black uppercase italic text-slate-400 ml-4 tracking-widest leading-none">Relatos Registados ({reports.length})</h3>
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
-                                {reports.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).map(r => (
-                                    <div key={r.id} className="bg-white p-8 rounded-[3rem] shadow-md border-l-[16px] border-l-blue-600 text-left relative group hover:shadow-2xl transition-all">
-                                        <button onClick={() => { if(confirm("Apagar?")) db.collection(`${DATA_PATH}/reports`).doc(r.id).delete(); }} className="absolute top-6 right-6 text-slate-100 group-hover:text-red-500 transition-colors"><Trash2 size={24}/></button>
-                                        <h4 className="font-black uppercase text-blue-600 mb-2 leading-none text-xl pr-10">{r.empresa}</h4>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase italic mb-6 leading-none tracking-wider">{r.unidade || 'Geral'}</p>
-                                        <div className="bg-slate-50 p-6 rounded-[2rem] text-sm font-bold text-slate-700 italic border border-slate-100 shadow-inner leading-relaxed">"{r.relato}"</div>
-                                        {r.contato && <p className="mt-3 text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none italic">Feedback: {r.contato}</p>}
-                                        <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center text-[9px] font-black uppercase text-slate-300 italic tracking-widest">
-                                            <span>{r.createdAt ? new Date(r.createdAt.seconds * 1000).toLocaleDateString() : 'Sinc...'}</span>
-                                            <span className="text-blue-600 opacity-60">Auditado RCH</span>
+
+                    <main className="max-w-7xl mx-auto">
+                        
+                        {/* GESTÃO DE PASTAS CUSTOMIZADAS */}
+                        {adminTab === 'folders' && (
+                            <div className="space-y-12 animate-fade no-print">
+                                <div className="bg-white p-10 rounded-[3rem] shadow-xl border-t-8 border-emerald-600 text-left">
+                                    <h3 className="text-[10px] font-black uppercase italic text-slate-400 mb-8 tracking-widest">Criar Pasta de Trabalho Personalizada</h3>
+                                    <form onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        const name = e.target.folderName.value.toUpperCase();
+                                        if(!name) return;
+                                        await db.collection(`${DATA_PATH}/folders`).add({ name: name, createdAt: serverTimestamp() });
+                                        e.target.reset();
+                                        alert("Pasta Criada!");
+                                    }} className="flex flex-col md:flex-row gap-4">
+                                        <input name="folderName" required className="flex-1 input-rch shadow-inner" placeholder="NOME DA PASTA (Ex: Urgentes, Arquivo 2024)" />
+                                        <button type="submit" className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Criar Agora</button>
+                                    </form>
+                                </div>
+                                <div className="grid md:grid-cols-4 gap-4">
+                                   {folders.map(f => (
+                                     <div key={f.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between group">
+                                        <div className="flex items-center gap-3">
+                                           <FolderPlus size={18} className="text-emerald-600" />
+                                           <span className="font-black uppercase text-[10px]">{f.name}</span>
                                         </div>
-                                    </div>
-                                ))}
+                                        <button onClick={async () => { if(confirm("Apagar pasta?")) await db.collection(`${DATA_PATH}/folders`).doc(f.id).delete(); }} className="text-slate-100 group-hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
+                                     </div>
+                                   ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* GESTÃO DE EMPRESAS E TREINOS */}
+                        {adminTab === 'companies' && (
+                            <div className="space-y-12 animate-fade no-print text-left">
+                                <div className="bg-white p-10 rounded-[3rem] shadow-xl border-t-8 border-blue-600 text-left">
+                                    <h3 className="text-[10px] font-black uppercase italic text-slate-400 mb-8 tracking-widest text-left">Ativar Novo Canal e Treinamento</h3>
+                                    <form onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        const fd = new FormData(e.target);
+                                        await db.collection(`${DATA_PATH}/companies`).add({
+                                            name: fd.get('nome').toUpperCase(),
+                                            dataTreino: fd.get('dataTreino'),
+                                            vencimento: fd.get('vencimento'),
+                                            dataRegistro: new Date().toISOString()
+                                        });
+                                        e.target.reset();
+                                        alert("Canal Ativado!");
+                                    }} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div>
+                                            <label className="text-[9px] font-black uppercase text-slate-400 ml-2 mb-2 block">Nome da Empresa</label>
+                                            <input name="nome" required className="input-rch shadow-inner" placeholder="CLIENTE" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-black uppercase text-slate-400 ml-2 mb-2 block">Data Treinamento</label>
+                                            <input type="date" name="dataTreino" required className="input-rch shadow-inner" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-black uppercase text-slate-400 ml-2 mb-2 block">Vencimento Auditoria</label>
+                                            <input type="date" name="vencimento" required className="input-rch shadow-inner" />
+                                        </div>
+                                        <div className="md:col-span-3">
+                                            <button type="submit" className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Registrar e Ativar Canal</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-8">
+                                    {companies.map(c => {
+                                        const isExpired = new Date(c.vencimento) < new Date();
+                                        return (
+                                            <div key={c.id} className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col group relative hover:shadow-2xl transition-all text-left">
+                                                <div className="flex justify-between items-start mb-8 text-left">
+                                                    <div className="text-left leading-none">
+                                                        <p className="font-black uppercase text-lg text-slate-900 leading-none">{c.name}</p>
+                                                        <div className="selo-validador h-4 px-2 py-0 text-[8px] mt-3 inline-flex">SELADO RCH</div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => showQR(c)} className="bg-slate-50 text-slate-900 p-3 rounded-2xl hover:bg-blue-600 hover:text-white transition-all"><QrCode size={18}/></button>
+                                                        <button onClick={async () => { if(confirm("Apagar?")) await db.collection(`${DATA_PATH}/companies`).doc(c.id).delete(); }} className="text-slate-100 hover:text-red-500 transition-colors p-3"><Trash2 size={18}/></button>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4 pt-6 border-t border-slate-50 text-left">
+                                                    <div className="flex items-center gap-4 text-slate-500">
+                                                        <GraduationCap size={20} className="text-blue-600" />
+                                                        <div className="text-left leading-none">
+                                                            <p className="text-[8px] uppercase opacity-40">Treinamento</p>
+                                                            <p className="text-xs font-black">{new Date(c.dataTreino).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`flex items-center gap-4 ${isExpired ? 'text-red-500 animate-pulse' : 'text-emerald-500'}`}>
+                                                        <Calendar size={20} />
+                                                        <div className="text-left leading-none">
+                                                            <p className="text-[8px] uppercase opacity-40">Validade</p>
+                                                            <p className="text-xs font-black">{new Date(c.vencimento).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PASTAS DE RELATOS E EMISSÃO DE PDF */}
+                        {adminTab === 'reports' && (
+                            <div className="space-y-12 animate-fade text-left">
+                                <div className="flex justify-end no-print">
+                                    <button onClick={() => window.print()} className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] flex items-center gap-3 shadow-2xl hover:bg-blue-600 transition-all">
+                                        <Printer size={20} /> Exportar Dossiê Consolidadado (PDF)
+                                    </button>
+                                </div>
+
+                                {/* Organizador por Pastas de Empresas (As Pastas Digitais) */}
+                                {companies.map(emp => {
+                                    const empReports = reports.filter(r => r.empresaId === emp.id || r.empresaName === emp.name);
+                                    if(empReports.length === 0) return null;
+
+                                    return (
+                                        <div key={emp.id} className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden mb-10 no-print-section text-left">
+                                            <button onClick={() => setExpandedCompany(expandedCompany === emp.id ? null : emp.id)} className="w-full p-8 flex items-center justify-between hover:bg-slate-50 no-print text-left">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="bg-blue-600 p-3 rounded-2xl text-white shadow-lg"><FolderOpen size={24}/></div>
+                                                    <div className="text-left">
+                                                        <h3 className="text-xl font-black uppercase italic text-slate-900">{emp.name}</h3>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{empReports.length} Ocorrências Registradas</p>
+                                                    </div>
+                                                </div>
+                                                {expandedCompany === emp.id ? <ChevronUp size={24}/> : <ChevronDown size={24}/>}
+                                            </button>
+
+                                            <div className={`${expandedCompany === emp.id ? 'block' : 'hidden'} md:block p-10 pt-0 space-y-12 text-left`}>
+                                                {empReports.map(r => (
+                                                    <div key={r.id} className="bg-slate-50 p-10 md:p-14 rounded-[4rem] border-l-[30px] border-l-blue-600 relative report-box text-left print:border-l-0 print:p-0">
+                                                        
+                                                        {/* FORMULÁRIO DE ABERTURA (ADMIN) */}
+                                                        <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10 border-b border-slate-200 pb-10 text-left report-header">
+                                                            <div className="text-left leading-none">
+                                                                <div className="flex items-center gap-4 mb-5 text-left leading-none">
+                                                                    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase ${r.status === 'CONCLUÍDO' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>STATUS: {r.status}</span>
+                                                                    <span className="text-[10px] font-black text-slate-900 bg-slate-200 px-4 py-1 rounded-xl uppercase">PROTOCOLO: {r.protocolo}</span>
+                                                                </div>
+                                                                <h4 className="text-4xl font-black uppercase tracking-tighter text-slate-900 leading-none mb-6 text-left">{emp.name}</h4>
+                                                                
+                                                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4 no-print text-left">
+                                                                    <h5 className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-2 leading-none"><Gavel size={16}/> 1. Abertura do Inquérito Auditoria</h5>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                                                                        <div className="text-left">
+                                                                            <label className="text-[8px] font-black uppercase text-slate-400 ml-2 block mb-1">Nº Ocorrência Técnica</label>
+                                                                            <input className="input-rch h-10 py-0 text-xs shadow-inner" placeholder="Ex: 001/26" defaultValue={r.numOcorrencia} onBlur={(e) => updateReportData(r.id, { numOcorrencia: e.target.value })} />
+                                                                        </div>
+                                                                        <div className="text-left">
+                                                                            <label className="text-[8px] font-black uppercase text-slate-400 ml-2 block mb-1">Data de Abertura</label>
+                                                                            <input type="date" className="input-rch h-10 py-0 text-xs shadow-inner" defaultValue={r.dataAberturaAdmin} onBlur={(e) => updateReportData(r.id, { dataAberturaAdmin: e.target.value, status: 'EM ANÁLISE' })} />
+                                                                        </div>
+                                                                        <div className="text-left">
+                                                                            <label className="text-[8px] font-black uppercase text-slate-400 ml-2 block mb-1">Prazo de Fechamento</label>
+                                                                            <input type="date" className="input-rch h-10 py-0 text-xs shadow-inner" defaultValue={r.prazoFechamento} onBlur={(e) => updateReportData(r.id, { prazoFechamento: e.target.value })} />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-2 no-print">
+                                                                <select 
+                                                                    className="bg-white p-3 rounded-2xl text-[9px] font-black uppercase outline-none border border-slate-200 shadow-sm"
+                                                                    onChange={(e) => updateReportData(r.id, { folderId: e.target.value })}
+                                                                    value={r.folderId}
+                                                                >
+                                                                    <option value="default">Mover para Pasta...</option>
+                                                                    {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                                                </select>
+                                                                <button onClick={async () => { if(confirm("Apagar?")) await db.collection(`${DATA_PATH}/reports`).doc(r.id).delete(); }} className="bg-red-50 text-red-500 p-4 rounded-2xl border border-red-100"><Trash2 size={24}/></button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid md:grid-cols-3 gap-12 mb-12 text-left">
+                                                            <div className="md:col-span-2 space-y-8 text-left">
+                                                                <div className="bg-white p-10 rounded-[3rem] text-left border border-slate-100 shadow-sm">
+                                                                    <p className="text-[11px] font-black text-slate-400 uppercase mb-5 italic flex items-center gap-2 tracking-widest leading-none"><FileText size={18}/> Conteúdo Auditado do Relato:</p>
+                                                                    <p className="text-lg font-bold text-slate-700 italic leading-relaxed text-left">"{r.relato}"</p>
+                                                                </div>
+
+                                                                {/* FORMULÁRIO DE FECHAMENTO (ADMIN) */}
+                                                                <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 space-y-6 text-left no-print">
+                                                                    <h5 className="text-[10px] font-black uppercase text-emerald-600 flex items-center gap-2 leading-none"><CheckCircle size={16}/> 2. Encerramento e Parecer Técnico</h5>
+                                                                    <div className="space-y-6 text-left">
+                                                                        <div className="text-left">
+                                                                            <label className="text-[8px] font-black uppercase text-slate-400 ml-2 block mb-1">Data do Fechamento Final</label>
+                                                                            <input type="date" className="input-rch h-12 text-xs shadow-inner" defaultValue={r.dataFechamentoAdmin} onBlur={(e) => updateReportData(r.id, { dataFechamentoAdmin: e.target.value, status: 'CONCLUÍDO' })} />
+                                                                        </div>
+                                                                        <div className="text-left">
+                                                                            <label className="text-[8px] font-black uppercase text-slate-400 ml-2 block mb-1">Conclusão e Parecer Auditoria</label>
+                                                                            <textarea className="input-rch h-32 py-4 normal-case font-medium text-sm shadow-inner" placeholder="Escreva o parecer final..." defaultValue={r.conclusaoTecnica} onBlur={(e) => updateReportData(r.id, { conclusaoTecnica: e.target.value })}></textarea>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="bg-slate-900 p-10 rounded-[3.5rem] text-white text-left flex flex-col justify-between shadow-2xl">
+                                                                <div className="space-y-8 text-left leading-none">
+                                                                    <p className="text-[10px] font-black text-blue-400 uppercase italic flex items-center gap-2 leading-none tracking-widest"><UserCheck size={18}/> Inquérito de Triagem</p>
+                                                                    <div className="space-y-8 text-left leading-none">
+                                                                        <div className="flex items-center gap-4 text-left leading-none">
+                                                                            {r.identidade === 'IDENTIFICADO' ? <UserCheck className="text-emerald-400" size={24}/> : <UserX className="text-red-400" size={24}/>}
+                                                                            <div className="text-left leading-none">
+                                                                                <p className="text-[8px] opacity-40 uppercase leading-none">Identidade</p>
+                                                                                <p className="text-xs font-black mt-1 leading-none">{r.identidade}</p>
+                                                                                {r.identidade === 'IDENTIFICADO' && <p className="text-[10px] text-blue-400 font-bold mt-1 uppercase leading-none">{r.nomeRelator}</p>}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-4 text-left leading-none">
+                                                                            <Search className="text-blue-400" size={24}/>
+                                                                            <div className="text-left leading-none">
+                                                                                <p className="text-[8px] opacity-40 uppercase leading-none">Testemunhas</p>
+                                                                                <p className="text-xs font-black mt-1 leading-none">{r.testemunhas}</p>
+                                                                                {r.testemunhas === 'SIM' && <p className="text-[9px] text-slate-400 italic mt-2 leading-tight text-left">{r.nomesTestemunhas}</p>}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-4 text-left leading-none">
+                                                                            <Building2 className="text-emerald-400" size={24}/>
+                                                                            <div className="text-left leading-none">
+                                                                                <p className="text-[8px] opacity-40 uppercase leading-none">Unidade/Fato</p>
+                                                                                <p className="text-xs font-black mt-1 leading-none">{r.unidade}</p>
+                                                                                <p className="text-[10px] text-slate-300 mt-1 leading-none italic">{new Date(r.dataOcorrencia).toLocaleDateString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="mt-12 pt-8 border-t border-white/10 text-left leading-none">
+                                                                    <p className="text-[9px] opacity-40 uppercase mb-2 leading-none">Contacto para Resposta</p>
+                                                                    <p className="text-sm font-black text-emerald-400 tracking-wide leading-none">{r.contato}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* ÁREA DE ASSINATURA NO PDF (VISÍVEL SÓ NA IMPRESSÃO) */}
+                                                        <div className="hidden print:block mt-16 p-10 border-2 border-slate-900 rounded-[3.5rem] text-left">
+                                                            <h5 className="text-[12px] font-black uppercase underline mb-8 text-left">Parecer Consolidado de Auditoria NR-1</h5>
+                                                            <div className="grid grid-cols-2 gap-12 text-[10px] font-bold uppercase text-left leading-none">
+                                                                <div className="space-y-4 text-left leading-none">
+                                                                    <p className="opacity-50 text-left">Nº Ocorrência: {r.numOcorrencia || '---'}</p>
+                                                                    <p className="opacity-50 text-left">Abertura: {r.dataAberturaAdmin ? new Date(r.dataAberturaAdmin).toLocaleDateString() : '---'}</p>
+                                                                    <p className="opacity-50 text-left">Prazo Limite: {r.prazoFechamento ? new Date(r.prazoFechamento).toLocaleDateString() : '---'}</p>
+                                                                </div>
+                                                                <div className="space-y-4 text-left leading-none">
+                                                                    <p className="opacity-50 text-left">Encerramento Auditoria: {r.dataFechamentoAdmin ? new Date(r.dataFechamentoAdmin).toLocaleDateString() : '---'}</p>
+                                                                    <p className="opacity-50 italic text-left">Protocolo RCH: {r.protocolo}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-10 pt-10 border-t border-slate-100 text-left">
+                                                                <p className="text-[10px] font-black uppercase text-slate-400 mb-4 italic text-left">Parecer Técnico Final e Deliberação:</p>
+                                                                <p className="text-sm italic font-medium leading-relaxed text-left">"{r.conclusaoTecnica || 'Processo aguardando parecer final da auditoria.'}"</p>
+                                                            </div>
+                                                            <div className="flex justify-between items-end mt-24 text-center">
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className="signature-line"></div>
+                                                                    <p className="text-[10px] font-black uppercase mt-4 italic leading-none">Daiana Freitas - Auditoria RCH</p>
+                                                                </div>
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className="signature-line"></div>
+                                                                    <p className="text-[10px] font-black uppercase mt-4 italic leading-none">Responsável Compliance Empresa</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </main>
+
+                    {/* MODAL CARTAZ QR CODE */}
+                    {qrTarget && (
+                        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex items-center justify-center p-6 no-print">
+                            <div className="max-w-md w-full glass-card p-12 text-center animate-fade">
+                                <div className="bg-blue-600 text-white w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl"><QrCode size={40}/></div>
+                                <h3 className="text-2xl font-black uppercase italic text-slate-900 mb-2 leading-none">Cartaz Informativo</h3>
+                                <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-12 leading-none">{qrTarget.name}</p>
+                                <div className="bg-white p-8 rounded-[3rem] inline-block shadow-2xl mb-12 border-8 border-slate-50"><div id="qr-box"></div></div>
+                                <p className="text-[11px] text-slate-400 font-bold mb-12 leading-relaxed uppercase leading-none">Imprima para que os trabalhadores acedam ao canal de auditoria independente NR-1.</p>
+                                <div className="flex gap-4">
+                                    <button onClick={() => window.print()} className="flex-grow btn-rch bg-slate-900 py-5"><Printer size={20}/> Imprimir</button>
+                                    <button onClick={() => setQrTarget(null)} className="flex-grow btn-rch bg-red-50 text-red-600 py-5"><X size={20}/> Fechar</button>
+                                </div>
                             </div>
                         </div>
-                    </main>
+                    )}
                 </div>
             );
 
