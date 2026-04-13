@@ -12,33 +12,82 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Firebase SDK (Versão Global Estável) -->
+    <!-- Firebase SDK (Conexão Blindada) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; margin: 0; text-align: left; -webkit-tap-highlight-color: transparent; }
-        .glass { background: rgba(255, 255, 255, 0.98); border-radius: 2.5rem; padding: 2.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
-        .input-rch { width: 100%; padding: 1.25rem; background: #f1f5f9; border-radius: 1.25rem; border: 2px solid transparent; font-weight: 700; color: #0f172a; text-transform: uppercase; outline: none; transition: all 0.2s; font-size: 16px; }
-        .input-rch:focus { border-color: #2563eb; background: white; }
-        .btn-rch { width: 100%; background: #2563eb; color: white; font-weight: 800; padding: 1.25rem; border-radius: 1.25rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s; cursor: pointer; border: none; font-size: 14px; }
-        .btn-rch:active { transform: scale(0.95); opacity: 0.9; }
-        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #0f172a; 
+            margin: 0; 
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.98); 
+            border-radius: 2.5rem; 
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .input-rch { 
+            width: 100%; 
+            padding: 1.25rem; 
+            background-color: #f1f5f9; 
+            border-radius: 1.25rem; 
+            border: 2px solid transparent; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            outline: none; 
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+
+        .input-rch:focus { 
+            border-color: #2563eb; 
+            background-color: white;
+        }
+
+        .btn-rch { 
+            width: 100%; 
+            background-color: #2563eb; 
+            color: white; 
+            font-weight: 800; 
+            padding: 1.25rem; 
+            border-radius: 1.25rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em; 
+            transition: all 0.2s; 
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-rch:active { transform: scale(0.96); opacity: 0.9; }
+
+        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(15px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-slate-900 min-h-screen">
+<body class="bg-slate-900 min-h-screen selection:bg-blue-100">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
-        const { Shield, Search, ChevronRight, CheckCircle, ShieldCheck, X, Trash2, Lock, Building2, RefreshCw } = lucide;
+        const { Shield, Search, ChevronRight, CheckCircle, ShieldCheck, X, Trash2, Lock, Building2, Eye, RefreshCw } = lucide;
 
-        // Configuração Oficial Daiana Freitas extraída dos teus ficheiros
+        // Configuração Firebase Daiana Freitas
         const firebaseConfig = {
             authDomain: "respeito-capital-humano-df.firebaseapp.com",
             projectId: "respeito-capital-humano-df",
@@ -47,7 +96,6 @@
             appId: "1:1062425708099:web:260cfa86f5112a5b3cf6f6"
         };
 
-        // Iniciar Firebase
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
         const auth = firebase.auth();
@@ -63,7 +111,7 @@
             const [loading, setLoading] = useState(false);
 
             useEffect(() => {
-                const init = async () => {
+                const initSystem = async () => {
                     try {
                         await auth.signInAnonymously();
                         // Monitorar Empresas
@@ -77,7 +125,7 @@
                         });
                     } catch (e) { setView('welcome'); }
                 };
-                init();
+                initSystem();
             }, []);
 
             const filtered = useMemo(() => {
@@ -98,28 +146,28 @@
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     setView('success');
-                } catch (e) { alert("Erro ao enviar. Tente novamente."); }
+                } catch (e) { alert("Erro de rede."); }
                 setLoading(false);
             };
 
             if (view === 'loading') return (
-                <div className="h-screen flex flex-col items-center justify-center text-white px-6">
+                <div className="h-screen flex flex-col items-center justify-center text-white">
                     <Shield size={64} className="text-blue-500 animate-bounce mb-6" />
-                    <p className="font-black uppercase tracking-[0.4em] text-[10px] opacity-50 italic">Ligando ao Servidor RCH...</p>
+                    <p className="font-black uppercase tracking-[0.4em] text-[10px] opacity-50 italic">Ligando Auditoria RCH...</p>
                 </div>
             );
 
             if (view === 'welcome') return (
-                <div className="min-h-screen flex items-center justify-center p-6 animate-fade text-center leading-none">
-                    <div className="max-w-xl w-full glass relative z-10">
-                        <div className="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-xl shadow-blue-500/20 leading-none">
+                <div className="min-h-screen flex items-center justify-center p-6 animate-in">
+                    <div className="max-w-xl w-full glass-card text-center relative z-10">
+                        <div className="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-xl leading-none">
                             <Shield size={40} />
                         </div>
                         <h1 className="text-2xl font-black uppercase italic tracking-tighter leading-none text-slate-900">Respeito ao Capital Humano</h1>
-                        <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest mt-2 mb-10 italic">Auditoria Independente</p>
+                        <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest mt-2 mb-10 leading-none">Auditoria Independente</p>
                         
                         <div className="text-left space-y-4 leading-none">
-                            <label className="text-[10px] font-black uppercase text-slate-400 italic ml-4 leading-none">Procure a empresa cliente:</label>
+                            <label className="text-[10px] font-black uppercase text-slate-400 italic ml-4 leading-none">Pesquise a empresa cliente:</label>
                             <div className="relative leading-none">
                                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                                 <input 
@@ -131,7 +179,7 @@
                                 />
                             </div>
                             {search && (
-                                <div className="bg-white border rounded-2xl shadow-xl p-2 max-h-48 overflow-y-auto mt-2 custom-scrollbar leading-none">
+                                <div className="bg-white border rounded-2xl shadow-xl p-2 max-h-48 overflow-y-auto mt-2 no-scrollbar leading-none">
                                     {filtered.length > 0 ? filtered.map(c => (
                                         <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all text-left font-bold uppercase text-sm group leading-none">
                                             <div className="flex items-center gap-3 leading-none">
@@ -140,7 +188,7 @@
                                             </div>
                                             <ChevronRight size={18} />
                                         </button>
-                                    )) : <div className="p-6 text-center text-slate-400 font-bold italic text-xs uppercase leading-none">Não registada</div>}
+                                    )) : <div className="p-6 text-center text-slate-400 font-bold italic text-xs uppercase leading-none">Empresa não encontrada</div>}
                                 </div>
                             )}
                         </div>
@@ -148,18 +196,18 @@
                             <ShieldCheck size={20} className="text-blue-600" />
                             <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none">Canal Seguro Auditado RCH</span>
                         </div>
-                        <button onClick={() => setView('admin-login')} className="mt-10 text-[9px] font-black text-slate-300 uppercase tracking-widest hover:text-blue-600 transition-colors leading-none italic">Acesso Administrativo</button>
+                        <button onClick={() => setView('admin-login')} className="mt-10 text-[9px] font-black text-slate-300 uppercase tracking-widest hover:text-blue-600 transition-colors leading-none italic">Área Administrativa</button>
                     </div>
                 </div>
             );
 
             if (view === 'form') return (
-                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 md:p-10 animate-fade leading-none">
-                    <div className="max-w-xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden text-slate-900 border border-slate-200 leading-none">
+                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 md:p-10 animate-in">
+                    <div className="max-w-xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden text-slate-900 border border-slate-200">
                         <header className="bg-slate-900 p-8 text-white flex justify-between items-center leading-none">
                             <div className="text-left leading-none">
                                 <h2 className="text-lg font-black uppercase leading-none italic tracking-tight">{activeCompany.name}</h2>
-                                <p className="text-[9px] font-bold text-blue-400 uppercase mt-2 tracking-widest leading-none">Protocolo Seguro RCH</p>
+                                <p className="text-[9px] font-bold text-blue-400 uppercase mt-2 tracking-widest leading-none italic">Protocolo Blindado RCH</p>
                             </div>
                             <button onClick={() => setView('welcome')} className="text-white bg-white/10 p-2 rounded-xl leading-none"><X size={24}/></button>
                         </header>
@@ -170,14 +218,14 @@
                             </div>
                             <div className="text-left leading-none">
                                 <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 ml-2 italic tracking-widest leading-none">Relato Detalhado *</label>
-                                <textarea name="relato" required className="input-rch h-56 normal-case font-medium text-sm leading-relaxed custom-scrollbar" placeholder="Descreva os factos com o máximo de detalhes..."></textarea>
+                                <textarea name="relato" required className="input-rch h-56 normal-case font-medium text-sm leading-relaxed no-scrollbar" placeholder="Descreva os acontecimentos com o máximo de detalhes para a auditoria..."></textarea>
                             </div>
                             <div className="text-left leading-none">
-                                <label className="text-[10px] font-black uppercase text-blue-600 block mb-3 ml-2 italic tracking-widest leading-none">Contacto (Opcional)</label>
+                                <label className="text-[10px] font-black uppercase text-blue-600 block mb-3 ml-2 italic tracking-widest leading-none">Contacto Opcional</label>
                                 <input name="contato" className="input-rch border-blue-50 bg-blue-50/20 leading-none" placeholder="WhatsApp ou E-mail" />
                             </div>
-                            <button type="submit" disabled={loading} className="btn-rch shadow-lg leading-none">
-                                {loading ? "A ENVIAR..." : "PROTOCOLAR AGORA"}
+                            <button type="submit" disabled={loading} className="btn-rch leading-none shadow-lg">
+                                {loading ? "ENVIANDO PROTOCOLO..." : "PROTOCOLAR DENÚNCIA AGORA"}
                             </button>
                         </form>
                     </div>
@@ -185,19 +233,19 @@
             );
 
             if (view === 'success') return (
-                <div className="h-screen flex flex-col items-center justify-center text-center p-10 text-white animate-fade bg-slate-900 leading-none">
+                <div className="h-screen flex flex-col items-center justify-center text-center p-10 text-white animate-in bg-slate-900 leading-none">
                     <div className="bg-blue-600/20 p-12 rounded-[4rem] mb-10 shadow-2xl border border-blue-500/20 leading-none">
                         <CheckCircle size={100} className="text-blue-500 animate-bounce leading-none" />
                     </div>
                     <h2 className="text-5xl font-black uppercase italic mb-6 tracking-tighter leading-none">Recebido</h2>
-                    <p className="text-sm opacity-60 mb-14 font-bold uppercase tracking-[0.2em] max-w-xs mx-auto leading-relaxed text-center">O seu protocolo foi registado na Auditoria RCH.</p>
+                    <p className="text-sm opacity-60 mb-14 font-bold uppercase tracking-[0.2em] max-w-xs mx-auto leading-relaxed text-center">Protocolo RCH registado com sucesso.</p>
                     <button onClick={() => window.location.reload()} className="btn-rch max-w-xs leading-none">Concluir</button>
                 </div>
             );
 
             if (view === 'admin-login') return (
-                <div className="h-screen flex items-center justify-center p-6 text-center animate-fade leading-none">
-                    <div className="max-w-xs w-full glass text-center border border-white/20 leading-none">
+                <div className="h-screen flex items-center justify-center p-6 text-center animate-in leading-none">
+                    <div className="max-w-xs w-full glass-card text-center border border-white/20 leading-none">
                         <Lock size={40} className="mx-auto mb-6 text-blue-600 leading-none" />
                         <h2 className="text-xl font-black uppercase text-slate-900 mb-10 leading-none tracking-tighter">Painel Auditor</h2>
                         <input type="password" className="input-rch text-center text-4xl mb-10 tracking-widest font-black leading-none" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
@@ -208,23 +256,23 @@
             );
 
             if (view === 'admin-dash') return (
-                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-12 text-left animate-fade leading-none">
+                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-12 text-left animate-in leading-none">
                     <header className="flex flex-col md:flex-row justify-between items-center mb-14 max-w-6xl mx-auto gap-8 text-left leading-none">
                         <div className="flex items-center gap-5 text-left leading-none">
                             <div className="bg-slate-900 p-3 rounded-2xl text-white shadow-xl shadow-slate-900/20 leading-none"><Shield size={32} /></div>
                             <div className="text-left leading-none">
-                                <h2 className="text-2xl font-black uppercase italic leading-none tracking-tight text-left">Gestão Independente RCH</h2>
-                                <p className="text-[10px] font-bold text-blue-600 uppercase mt-2 tracking-widest leading-none text-left italic">Painel de Controlo</p>
+                                <h2 className="text-2xl font-black uppercase italic leading-none tracking-tight text-left">Gestão de Auditoria RCH</h2>
+                                <p className="text-[10px] font-bold text-blue-600 uppercase mt-2 tracking-widest leading-none text-left italic">Compliance DF</p>
                             </div>
                         </div>
                         <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 font-black text-[10px] uppercase px-10 py-4 rounded-2xl border border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-sm leading-none">Sair do Painel</button>
                     </header>
-                    <main className="max-w-6xl mx-auto space-y-12 leading-none">
+                    <main className="max-w-6xl mx-auto space-y-12 leading-none text-left">
                         <div className="bg-white p-10 rounded-[3rem] shadow-xl border-t-8 border-blue-600 leading-none text-left">
                             <h3 className="text-[10px] font-black uppercase italic text-slate-400 mb-6 leading-none tracking-widest text-left">Activar Empresa Cliente</h3>
                             <div className="flex flex-col md:flex-row gap-6 leading-none text-left">
                                 <input id="nc" className="flex-grow p-5 bg-slate-50 rounded-2xl font-bold uppercase outline-none focus:border-blue-600 border-2 border-transparent shadow-inner text-lg leading-none" placeholder="NOME DA EMPRESA" />
-                                <button onClick={() => { const v = document.getElementById('nc').value; if(v) db.collection(`${DATA_PATH}/companies`).add({name: v, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); document.getElementById('nc').value = ''; }} className="bg-blue-600 text-white px-14 py-5 rounded-2xl font-black uppercase text-xs shadow-xl shadow-blue-500/20 active:scale-95 transition-all leading-none">Registar Canal</button>
+                                <button onClick={() => { const v = document.getElementById('nc').value; if(v) db.collection(`${DATA_PATH}/companies`).add({name: v, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); document.getElementById('nc').value = ''; }} className="bg-blue-600 text-white px-14 py-5 rounded-2xl font-black uppercase text-xs shadow-xl shadow-blue-500/20 active:scale-95 transition-all leading-none">Ativar Canal</button>
                             </div>
                         </div>
                         <div className="space-y-8 leading-none text-left">
@@ -232,11 +280,11 @@
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 leading-none">
                                 {reports.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).map(r => (
                                     <div key={r.id} className="bg-white p-8 rounded-[3rem] shadow-md border-l-[16px] border-l-blue-600 text-left relative group hover:shadow-2xl transition-all leading-none">
-                                        <button onClick={() => { if(confirm("Apagar denúncia?")) db.collection(`${DATA_PATH}/reports`).doc(r.id).delete(); }} className="absolute top-6 right-6 text-slate-100 group-hover:text-red-500 transition-colors leading-none"><Trash2 size={24}/></button>
+                                        <button onClick={() => { if(confirm("Apagar permanentemente?")) db.collection(`${DATA_PATH}/reports`).doc(r.id).delete(); }} className="absolute top-6 right-6 text-slate-100 group-hover:text-red-500 transition-colors leading-none"><Trash2 size={24}/></button>
                                         <h4 className="font-black uppercase text-blue-600 mb-2 leading-none text-xl pr-10">{r.empresa}</h4>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase italic mb-6 leading-none tracking-wider">{r.unidade || 'Localização Geral'}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase italic mb-6 leading-none tracking-wider">{r.unidade || 'Geral'}</p>
                                         <div className="bg-slate-50 p-6 rounded-[2rem] text-sm font-bold text-slate-700 italic border border-slate-100 shadow-inner leading-relaxed leading-none text-left">"{r.relato}"</div>
-                                        {r.contato && <p className="mt-4 text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block uppercase leading-none">Contacto: {r.contato}</p>}
+                                        {r.contato && <p className="mt-4 text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block uppercase leading-none italic">Feedback: {r.contato}</p>}
                                         <p className="mt-6 text-[9px] font-black uppercase text-blue-600 tracking-widest text-right opacity-30 leading-none italic">Auditado RCH</p>
                                     </div>
                                 ))}
