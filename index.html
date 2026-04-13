@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Enterprise RCH | Auditoria 360 & NR-1</title>
     
-    <!-- Bibliotecas de Estabilidade (Links Diretos) -->
+    <!-- Bibliotecas Essenciais (Carregamento Prioritário) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Firebase SDK Compat -->
+    <!-- Firebase Legacy para Máxima Compatibilidade -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -29,23 +28,22 @@
         }
 
         .glass-card { 
-            background: rgba(255, 255, 255, 0.98); 
-            border-radius: 2.5rem; 
-            padding: 2.5rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            background: rgba(255, 255, 255, 1); 
+            border-radius: 2rem; 
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
         .input-rch { 
             width: 100%; 
-            padding: 1.1rem; 
+            padding: 1rem; 
             background-color: #f1f5f9; 
             border-radius: 1rem; 
             border: 2px solid transparent; 
             font-weight: 700; 
             text-transform: uppercase; 
-            outline: none; 
-            color: #0f172a;
-            transition: all 0.2s;
+            outline: none;
+            transition: 0.2s;
         }
 
         .input-rch:focus { border-color: #2563eb; background-color: white; }
@@ -59,51 +57,50 @@
             text-transform: uppercase; 
             cursor: pointer;
             border: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
             width: 100%;
         }
 
-        .btn-rch:active { transform: scale(0.96); }
+        .btn-rch:active { transform: scale(0.98); }
 
+        /* Selos */
         .selo-nr1 {
-            background: linear-gradient(135deg, #065f46, #059669);
+            background: #065f46;
             color: white;
-            padding: 10px 15px;
-            border-radius: 12px;
-            font-size: 9px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 10px;
             font-weight: 900;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
             text-transform: uppercase;
         }
 
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; color: black !important; }
-            .report-box { border: 2px solid #000 !important; padding: 25px !important; margin-bottom: 30px !important; page-break-inside: avoid; }
-            .signature-line { border-top: 2px solid #000; width: 250px; text-align: center; margin-top: 50px; font-weight: bold; font-size: 10px; }
+            body { background: white !important; }
+            .report-box { border: 2px solid #000 !important; padding: 20px !important; margin-bottom: 30px !important; }
         }
 
-        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        ::-webkit-scrollbar { display: none; }
+        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="bg-slate-900">
-    <div id="root"></div>
+<body>
+    <div id="root">
+        <!-- Loader Visível se o JS falhar -->
+        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
+            <div style="text-align: center;">
+                <h2 style="margin-bottom: 10px;">A Carregar Portal RCH...</h2>
+                <p style="font-size: 12px; opacity: 0.5;">Se esta tela não sumir, atualize a página.</p>
+            </div>
+        </div>
+    </div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
-        const { 
-            Shield, Search, ChevronRight, CheckCircle, ShieldCheck, 
-            X, Trash2, Lock, Building2, Printer, QrCode, 
-            Calendar, GraduationCap, Gavel, UserCheck, UserX, FileText, Scale, FolderPlus, FolderOpen, ChevronDown, ChevronUp
-        } = lucide;
+        const { useState, useEffect, useMemo } = React;
+
+        // Ícones em SVG (Para evitar erros de carregamento externo)
+        const IconShield = () => (
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-blue-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        );
 
         const firebaseConfig = {
             authDomain: "respeito-capital-humano-df.firebaseapp.com",
@@ -127,10 +124,8 @@
             const [adminPass, setAdminPass] = useState('');
             const [loading, setLoading] = useState(false);
             const [adminTab, setAdminTab] = useState('reports');
-            const [lastProtocol, setLastProtocol] = useState('');
-            const [qrTarget, setQrTarget] = useState(null);
+            const [protocolCode, setProtocolCode] = useState('');
             const [isIdentified, setIsIdentified] = useState(false);
-            const [hasWitnesses, setHasWitnesses] = useState(false);
             const [expandedCompany, setExpandedCompany] = useState(null);
 
             useEffect(() => {
@@ -141,7 +136,7 @@
                 });
             }, []);
 
-            const searchResults = useMemo(() => {
+            const results = useMemo(() => {
                 const t = search.toLowerCase().trim();
                 return t.length >= 2 ? companies.filter(c => c.name.toLowerCase().includes(t)) : [];
             }, [search, companies]);
@@ -161,147 +156,202 @@
                         identidade: isIdentified ? 'IDENTIFICADO' : 'ANÓNIMO',
                         nomeRelator: fd.get('nomeRelator') || 'CONFIDENCIAL',
                         relato: fd.get('relato'),
-                        testemunhas: hasWitnesses ? 'SIM' : 'NÃO',
-                        nomesTestemunhas: fd.get('nomesTestemunhas') || 'NÃO INFORMADO',
                         contato: fd.get('contato') || 'NENHUM',
                         status: 'ABERTO',
                         folderId: 'default',
                         dataProtocolo: new Date().toISOString()
                     });
-                    setLastProtocol(prot);
+                    setProtocolCode(prot);
                     setView('success');
-                } catch (e) { alert("Erro ao enviar."); }
+                } catch (e) { alert("Erro de conexão."); }
                 setLoading(false);
-            };
-
-            const updateData = async (id, data) => {
-                await db.collection(`${DATA_PATH}/reports`).doc(id).update(data);
-            };
-
-            const showQR = (c) => {
-                setQrTarget(c);
-                setTimeout(() => {
-                    const el = document.getElementById("qr-box");
-                    if (el) {
-                        el.innerHTML = "";
-                        new QRCode(el, { text: window.location.href, width: 200, height: 200 });
-                    }
-                }, 100);
             };
 
             // --- TELAS ---
             
             if (view === 'welcome') return (
-                <div className="min-h-screen flex items-center justify-center p-6 animate-fade">
-                    <div className="max-w-2xl w-full glass-card text-center relative overflow-hidden">
-                        <div className="flex justify-center gap-4 mb-8">
-                            <div className="selo-nr1"><Scale size={16} /> NR-1 VALIDADA</div>
-                            <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase shadow-lg flex items-center gap-2"><ShieldCheck size={16} /> CERTIFICADO RCH</div>
+                <div className="min-h-screen flex items-center justify-center p-6 animate-fade bg-slate-900">
+                    <div className="max-w-xl w-full glass-card text-center">
+                        <div className="flex justify-center gap-2 mb-6">
+                            <div className="selo-nr1">NR-1 VALIDADA</div>
+                            <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">CERTIFICADO RCH</div>
                         </div>
-                        <Shield size={48} className="mx-auto text-blue-600 mb-6" />
-                        <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900 mb-4">Respeito ao Capital Humano</h1>
-                        <div className="bg-slate-50 p-6 rounded-3xl mb-10 border-l-4 border-emerald-500 text-left">
-                            <p className="text-[10px] font-black uppercase text-emerald-600 mb-2 italic tracking-widest leading-none">Citação Obrigatória NR-1:</p>
-                            <p className="text-[11px] font-bold text-slate-500 leading-relaxed italic">
-                                "O empregador deve estabelecer mecanismos para que os trabalhadores comuniquem situações de riscos graves e participem da gestão de SST."
-                            </p>
+                        <IconShield />
+                        <h1 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 mb-4 mt-4">Respeito ao Capital Humano</h1>
+                        
+                        <div className="bg-slate-50 p-5 rounded-2xl mb-8 border-l-4 border-emerald-500 text-left text-[11px] text-slate-500 italic leading-relaxed">
+                            "NR-1 Item 1.4.1: O empregador deve estabelecer mecanismos para que os trabalhadores comuniquem situações de riscos graves."
                         </div>
+
                         <div className="text-left space-y-4">
-                            <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Pesquisa Identificada da Empresa Cliente:</label>
-                            <input type="text" placeholder="Digite o nome da empresa..." className="input-rch shadow-lg border-slate-100" value={search} onChange={e => setSearch(e.target.value)} />
-                            <div className="space-y-3">
-                                {searchResults.map(c => (
-                                    <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full bg-white border border-slate-100 p-5 rounded-3xl flex items-center justify-between hover:bg-blue-600 hover:text-white transition-all group">
-                                        <div className="flex flex-col text-left"><span className="font-black uppercase text-sm">{c.name}</span><span className="text-[8px] font-black mt-1 opacity-50">CANAL AUDITADO RCH</span></div>
-                                        <ChevronRight size={22} className="text-blue-600 group-hover:text-white" />
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pesquisa de Empresa Cliente:</label>
+                            <input 
+                                type="text" 
+                                placeholder="Digite o nome da empresa..." 
+                                className="input-rch shadow-sm" 
+                                value={search} 
+                                onChange={e => setSearch(e.target.value)} 
+                            />
+                            <div className="space-y-2">
+                                {results.map(c => (
+                                    <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full bg-slate-50 p-4 rounded-xl flex items-center justify-between hover:bg-blue-600 hover:text-white transition-all">
+                                        <span className="font-black uppercase text-xs">{c.name}</span>
+                                        <span>➔</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
-                        <button onClick={() => setView('admin-login')} className="mt-14 text-[10px] font-black text-slate-300 uppercase italic">Acesso Auditoria</button>
+                        <button onClick={() => setView('admin-login')} className="mt-10 text-[9px] font-black text-slate-300 uppercase italic">Acesso Auditoria</button>
                     </div>
                 </div>
             );
 
             if (view === 'form') return (
                 <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-                    <div className="max-w-2xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden text-slate-900 text-left">
-                        <header className="bg-slate-900 p-8 text-white flex justify-between items-center">
-                            <div className="text-left"><h2 className="text-xl font-black uppercase italic tracking-tight">{activeCompany.name}</h2><p className="text-[9px] font-bold text-blue-400 uppercase mt-2 tracking-widest italic leading-none">Protocolo Ético de SST</p></div>
-                            <button onClick={() => setView('welcome')} className="text-white bg-white/10 p-2 rounded-xl"><X size={24}/></button>
+                    <div className="max-w-xl w-full bg-white rounded-[2rem] shadow-xl overflow-hidden text-left">
+                        <header className="bg-slate-900 p-6 text-white flex justify-between items-center text-left">
+                            <div className="text-left"><h2 className="text-lg font-black uppercase">{activeCompany.name}</h2><p className="text-[9px] text-blue-400 uppercase font-bold">Protocolo Ético de SST</p></div>
+                            <button onClick={() => setView('welcome')} className="text-white text-xl">✕</button>
                         </header>
-                        <form onSubmit={submitRelato} className="p-8 space-y-8">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div><label className="text-[10px] font-black text-slate-400 block mb-2 ml-2 italic">Unidade *</label><input name="unidade" required className="input-rch" placeholder="Ex: Sede" /></div>
-                                <div><label className="text-[10px] font-black text-slate-400 block mb-2 ml-2 italic">Data do Fato *</label><input type="date" name="dataOcorrencia" required className="input-rch" /></div>
+                        <form onSubmit={submitRelato} className="p-8 space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="text-[10px] font-black text-slate-400 block mb-1">Unidade *</label><input name="unidade" required className="input-rch" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 block mb-1">Data *</label><input type="date" name="dataOcorrencia" required className="input-rch" /></div>
                             </div>
-                            <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
-                                <p className="text-[10px] font-black text-slate-400 italic">Identificação</p>
-                                <div className="flex gap-4">
-                                    <button type="button" onClick={() => setIsIdentified(false)} className={`flex-1 p-4 rounded-xl font-black text-[10px] ${!isIdentified ? 'bg-blue-600 text-white shadow-lg' : 'bg-white'}`}>Anónimo</button>
-                                    <button type="button" onClick={() => setIsIdentified(true)} className={`flex-1 p-4 rounded-xl font-black text-[10px] ${isIdentified ? 'bg-blue-600 text-white shadow-lg' : 'bg-white'}`}>Identificado</button>
+                            <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
+                                <p className="text-[10px] font-black text-slate-400 uppercase">Identificação</p>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={() => setIsIdentified(false)} className={`flex-1 py-3 rounded-lg font-black text-[10px] ${!isIdentified ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'}`}>Anónimo</button>
+                                    <button type="button" onClick={() => setIsIdentified(true)} className={`flex-1 py-3 rounded-lg font-black text-[10px] ${isIdentified ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'}`}>Identificado</button>
                                 </div>
                                 {isIdentified && <input name="nomeRelator" required className="input-rch bg-white" placeholder="Seu Nome" />}
                             </div>
-                            <textarea name="relato" required className="input-rch h-48 normal-case font-medium text-sm" placeholder="O Seu Relato..."></textarea>
-                            <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
-                                <p className="text-[10px] font-black text-slate-400 italic">Testemunhas?</p>
-                                <div className="flex gap-4">
-                                    <button type="button" onClick={() => setHasWitnesses(true)} className={`flex-1 p-4 rounded-xl font-black text-[10px] ${hasWitnesses ? 'bg-blue-600 text-white shadow-lg' : 'bg-white'}`}>Sim</button>
-                                    <button type="button" onClick={() => setHasWitnesses(false)} className={`flex-1 p-4 rounded-xl font-black text-[10px] ${!hasWitnesses ? 'bg-blue-600 text-white shadow-lg' : 'bg-white'}`}>Não</button>
-                                </div>
-                                {hasWitnesses && <textarea name="nomesTestemunhas" className="input-rch bg-white h-24 normal-case text-xs" placeholder="Liste nomes..."></textarea>}
-                            </div>
-                            <div className="bg-emerald-50 p-6 rounded-3xl flex items-start gap-4 text-emerald-600">
-                                <ShieldCheck size={24} /> <p className="text-[9px] font-medium leading-relaxed italic">Este canal é gerido de forma independente pela Auditoria RCH. O sigilo é garantido por lei e pela NR-1.</p>
-                            </div>
-                            <button type="submit" disabled={loading} className="btn-rch py-5 text-lg shadow-2xl">{loading ? "Enviando..." : "Protocolar Agora"}</button>
+                            <textarea name="relato" required className="input-rch h-40 normal-case font-medium text-sm" placeholder="O Seu Relato..."></textarea>
+                            <button type="submit" disabled={loading} className="btn-rch py-4">{loading ? "A Enviar..." : "Protocolar Denúncia"}</button>
                         </form>
                     </div>
                 </div>
             );
 
             if (view === 'success') return (
-                <div className="h-screen flex flex-col items-center justify-center text-center p-10 bg-slate-900">
-                    <CheckCircle size={100} className="text-blue-500 animate-bounce mb-8" />
-                    <h2 className="text-4xl font-black uppercase italic text-white mb-4 leading-none">Recebido</h2>
-                    <div className="bg-white p-10 rounded-[3rem] mb-14 shadow-2xl scale-110">
-                        <p className="text-[10px] font-black text-slate-400 mb-3 uppercase tracking-widest leading-none">Protocolo Digital</p>
-                        <p className="text-5xl font-black text-blue-600 tracking-tighter leading-none">{lastProtocol}</p>
+                <div className="h-screen flex flex-col items-center justify-center text-center p-10 bg-slate-900 text-white">
+                    <h2 className="text-3xl font-black uppercase mb-4">Protocolado</h2>
+                    <div className="bg-white p-8 rounded-[2rem] mb-10 shadow-2xl">
+                        <p className="text-[10px] text-slate-400 mb-2 uppercase font-black">Código RCH</p>
+                        <p className="text-4xl font-black text-blue-600 tracking-tighter">{protocolCode}</p>
                     </div>
-                    <button onClick={() => window.location.reload()} className="btn-rch max-w-xs py-5">Finalizar</button>
+                    <button onClick={() => window.location.reload()} className="btn-rch max-w-xs">Sair</button>
                 </div>
             );
 
             if (view === 'admin-login') return (
-                <div className="h-screen flex items-center justify-center p-6 text-center animate-fade">
+                <div className="h-screen flex items-center justify-center p-6 bg-slate-900 text-center">
                     <div className="max-w-xs w-full glass-card">
-                        <Lock size={40} className="mx-auto text-blue-600 mb-8" />
-                        <h2 className="text-xl font-black uppercase text-slate-900 mb-8 leading-none">Painel Auditora</h2>
-                        <input type="password" className="input-rch text-center text-4xl mb-10 tracking-[0.4em] font-black" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
-                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Incorreta")} className="btn-rch py-4">Entrar</button>
-                        <button onClick={() => setView('welcome')} className="mt-8 text-[9px] font-black text-slate-300 uppercase italic">Voltar</button>
+                        <h2 className="text-xl font-black uppercase text-slate-900 mb-8">Painel Auditora</h2>
+                        <input type="password" className="input-rch text-center text-3xl mb-8 font-black" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
+                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Incorreta")} className="btn-rch">Entrar</button>
+                        <button onClick={() => setView('welcome')} className="mt-8 text-[9px] font-black text-slate-400 uppercase italic">Voltar</button>
                     </div>
                 </div>
             );
 
             if (view === 'admin-dash') return (
-                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-12 text-left">
-                    <header className="flex flex-col md:flex-row justify-between items-center mb-10 max-w-7xl mx-auto gap-4 no-print text-left">
-                        <div className="flex items-center gap-4 text-left leading-none">
-                            <div className="bg-slate-900 p-4 rounded-3xl text-white shadow-xl"><Shield size={32} /></div>
-                            <div className="text-left leading-none"><h2 className="text-2xl font-black uppercase italic leading-none text-left">Enterprise 360</h2><p className="text-[10px] font-bold text-blue-600 uppercase mt-2 tracking-widest italic leading-none text-left">Gestão Independente | Daiana Freitas</p></div>
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-3">
-                             <button onClick={() => setAdminTab('reports')} className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase transition-all ${adminTab === 'reports' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}>Relatos</button>
-                             <button onClick={() => setAdminTab('folders')} className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase transition-all ${adminTab === 'folders' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}>Pastas</button>
-                             <button onClick={() => setAdminTab('companies')} className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}>Empresas</button>
-                             <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 font-black text-[10px] px-6 py-3 rounded-2xl border border-red-100 uppercase italic">Sair</button>
+                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 text-left">
+                    <header className="max-w-6xl mx-auto flex justify-between items-center mb-8 no-print">
+                        <div className="text-left leading-none"><h2 className="text-xl font-black uppercase">Admin RCH 360</h2><p className="text-[10px] text-blue-600 font-bold uppercase mt-1">Gestão Independente Daiana Freitas</p></div>
+                        <div className="flex gap-2">
+                             <button onClick={() => setAdminTab('reports')} className={`px-4 py-2 rounded-lg font-black text-[9px] uppercase ${adminTab === 'reports' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Relatos</button>
+                             <button onClick={() => setAdminTab('folders')} className={`px-4 py-2 rounded-lg font-black text-[9px] uppercase ${adminTab === 'folders' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Pastas</button>
+                             <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-lg font-black text-[9px] uppercase ${adminTab === 'companies' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Empresas</button>
+                             <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-black text-[9px] uppercase">Sair</button>
                         </div>
                     </header>
 
-                    <main className="max-w-7xl mx-auto">
+                    <main className="max-w-6xl mx-auto text-left">
+                        {adminTab === 'companies' && (
+                            <div className="bg-white p-8 rounded-3xl shadow-sm text-left no-print">
+                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6">Cadastrar Cliente</h3>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const fd = new FormData(e.target);
+                                    await db.collection(`${DATA_PATH}/companies`).add({
+                                        name: fd.get('nome').toUpperCase(),
+                                        dataTreino: fd.get('dataTreino'),
+                                        vencimento: fd.get('vencimento')
+                                    });
+                                    e.target.reset();
+                                    alert("Ativado!");
+                                }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <input name="nome" required className="input-rch" placeholder="NOME EMPRESA" />
+                                    <input type="date" name="dataTreino" required className="input-rch" />
+                                    <input type="date" name="vencimento" required className="input-rch" />
+                                    <button type="submit" className="md:col-span-3 btn-rch">Registrar</button>
+                                </form>
+                            </div>
+                        )}
+
                         {adminTab === 'folders' && (
-                            <div className="space-y-12 animate-fade no-print text-left">
-                                <div className="bg-white p-10 rounded-[3rem] shadow-xl border-t-8 border-emerald-600 text-left">
-                                    <h3 className="text-[10px] font-black uppercase italic text-slate-400 mb-8 tracking-widest text-left">Criar Pasta Personalizada</h3>
+                            <div className="bg-white p-8 rounded-3xl shadow-sm text-left no-print">
+                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6">Criar Pasta de Trabalho</h3>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const name = e.target.fn.value.toUpperCase();
+                                    await db.collection(`${DATA_PATH}/folders`).add({ name });
+                                    e.target.reset();
+                                }} className="flex gap-4">
+                                    <input name="fn" required className="flex-1 input-rch" placeholder="NOME DA PASTA (Ex: Urgentes)" />
+                                    <button type="submit" className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px]">Criar</button>
+                                </form>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                                    {folders.map(f => (
+                                        <div key={f.id} className="bg-slate-50 p-4 rounded-xl flex justify-between items-center">
+                                            <span className="text-[10px] font-black uppercase">{f.name}</span>
+                                            <button onClick={() => db.collection(`${DATA_PATH}/folders`).doc(f.id).delete()} className="text-red-500 font-black">✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {adminTab === 'reports' && (
+                            <div className="space-y-6">
+                                <button onClick={() => window.print()} className="bg-slate-900 text-white px-6 py-3 rounded-lg font-black text-[9px] uppercase no-print">Imprimir PDF</button>
+                                {companies.map(emp => {
+                                    const empReports = reports.filter(r => r.empresaId === emp.id || r.empresaName === emp.name);
+                                    if(empReports.length === 0) return null;
+                                    return (
+                                        <div key={emp.id} className="bg-white rounded-3xl border p-6 text-left report-box">
+                                            <h3 className="text-2xl font-black uppercase italic mb-6 border-b pb-4">{emp.name}</h3>
+                                            {empReports.map(r => (
+                                                <div key={r.id} className="mb-8 p-6 bg-slate-50 rounded-2xl border-l-8 border-blue-600">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="text-left"><p className="text-[9px] font-black text-blue-600 uppercase">Protocolo: {r.protocolo}</p><p className="text-[8px] opacity-50 uppercase">Data: {new Date(r.dataProtocolo).toLocaleDateString()}</p></div>
+                                                        <div className="no-print"><button onClick={() => db.collection(`${DATA_PATH}/reports`).doc(r.id).delete()} className="text-red-500">Apagar</button></div>
+                                                    </div>
+                                                    <div className="grid md:grid-cols-2 gap-4 text-left">
+                                                        <div className="bg-white p-4 rounded-xl"><p className="text-[9px] font-black uppercase text-slate-400 mb-2">Abertura Auditoria</p><div className="space-y-2"><input className="w-full p-2 bg-slate-50 rounded text-xs no-print" placeholder="Nº Ocorrência" defaultValue={r.numOcorrencia} onBlur={(e) => db.collection(`${DATA_PATH}/reports`).doc(r.id).update({numOcorrencia: e.target.value})} /><p className="print-only text-xs">Nº: {r.numOcorrencia}</p></div></div>
+                                                        <div className="bg-white p-4 rounded-xl"><p className="text-[9px] font-black uppercase text-slate-400 mb-2">Depoimento</p><p className="text-xs italic font-medium">"{r.relato}"</p></div>
+                                                    </div>
+                                                    <div className="mt-4 bg-white p-4 rounded-xl no-print text-left"><p className="text-[9px] font-black uppercase text-emerald-600 mb-2">Conclusão Técnica</p><textarea className="w-full p-2 bg-slate-50 rounded text-xs h-20" placeholder="Parecer Final..." defaultValue={r.conclusaoTecnica} onBlur={(e) => db.collection(`${DATA_PATH}/reports`).doc(r.id).update({conclusaoTecnica: e.target.value})}></textarea></div>
+                                                    <div className="print-only mt-6 pt-6 border-t border-dashed border-slate-300">
+                                                        <p className="text-[10px] font-black uppercase mb-2">Assinatura Auditoria (RCH): ________________________</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+
+            return null;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
