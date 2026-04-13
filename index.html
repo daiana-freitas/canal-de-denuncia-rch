@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Enterprise RCH | Auditoria 360 & NR-1</title>
     
-    <!-- Bibliotecas Essenciais (Carregamento Prioritário) -->
+    <!-- Bibliotecas de Base (Versões Estáveis) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Firebase Legacy para Máxima Compatibilidade -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -28,22 +28,22 @@
         }
 
         .glass-card { 
-            background: rgba(255, 255, 255, 1); 
-            border-radius: 2rem; 
-            padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            background: #ffffff; 
+            border-radius: 2.5rem; 
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
         .input-rch { 
             width: 100%; 
-            padding: 1rem; 
+            padding: 1.1rem; 
             background-color: #f1f5f9; 
             border-radius: 1rem; 
             border: 2px solid transparent; 
             font-weight: 700; 
             text-transform: uppercase; 
             outline: none;
-            transition: 0.2s;
+            transition: all 0.2s;
         }
 
         .input-rch:focus { border-color: #2563eb; background-color: white; }
@@ -57,50 +57,73 @@
             text-transform: uppercase; 
             cursor: pointer;
             border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             width: 100%;
         }
 
-        .btn-rch:active { transform: scale(0.98); }
+        .btn-rch:active { transform: scale(0.96); }
 
-        /* Selos */
         .selo-nr1 {
             background: #065f46;
             color: white;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 9px;
             font-weight: 900;
             text-transform: uppercase;
         }
 
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; }
-            .report-box { border: 2px solid #000 !important; padding: 20px !important; margin-bottom: 30px !important; }
+            body { background: white !important; color: black !important; }
+            .report-box { border: 2px solid #000 !important; padding: 25px !important; margin-bottom: 40px !important; page-break-inside: avoid; }
+            .signature-line { border-top: 2px solid #000; width: 250px; text-align: center; margin-top: 50px; font-weight: bold; font-size: 10px; }
         }
 
-        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
     <div id="root">
-        <!-- Loader Visível se o JS falhar -->
-        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
-            <div style="text-align: center;">
-                <h2 style="margin-bottom: 10px;">A Carregar Portal RCH...</h2>
-                <p style="font-size: 12px; opacity: 0.5;">Se esta tela não sumir, atualize a página.</p>
-            </div>
+        <!-- Loader inicial de segurança -->
+        <div id="fallback-loader" style="height: 100vh; display: flex; align-items: center; justify-content: center; color: white; background: #0f172a; flex-direction: column;">
+            <div style="width: 40px; height: 40px; border: 4px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+            <h2 style="font-family: sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">RCH AUDITORIA</h2>
+            <p style="font-size: 10px; opacity: 0.5; margin-top: 10px;">A iniciar sistema seguro...</p>
         </div>
     </div>
+
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Ícones em SVG (Para evitar erros de carregamento externo)
-        const IconShield = () => (
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-blue-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        );
+        // Ícones SVG Inline (Sem dependências externas para evitar erro de tela escura)
+        const Icons = {
+            Shield: ({size=24, color="currentColor"}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            ),
+            Folder: ({size=20, color="currentColor"}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            ),
+            Printer: ({size=20}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            ),
+            Search: ({size=18}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            ),
+            Trash: ({size=18}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            )
+        };
 
         const firebaseConfig = {
             authDomain: "respeito-capital-humano-df.firebaseapp.com",
@@ -124,9 +147,10 @@
             const [adminPass, setAdminPass] = useState('');
             const [loading, setLoading] = useState(false);
             const [adminTab, setAdminTab] = useState('reports');
-            const [protocolCode, setProtocolCode] = useState('');
+            const [lastProtocol, setLastProtocol] = useState('');
+            const [qrModal, setQrModal] = useState(null);
             const [isIdentified, setIsIdentified] = useState(false);
-            const [expandedCompany, setExpandedCompany] = useState(null);
+            const [expandedEmp, setExpandedEmp] = useState(null);
 
             useEffect(() => {
                 firebase.auth().signInAnonymously().then(() => {
@@ -158,76 +182,87 @@
                         relato: fd.get('relato'),
                         contato: fd.get('contato') || 'NENHUM',
                         status: 'ABERTO',
-                        folderId: 'default',
                         dataProtocolo: new Date().toISOString()
                     });
-                    setProtocolCode(prot);
+                    setLastProtocol(prot);
                     setView('success');
-                } catch (e) { alert("Erro de conexão."); }
+                } catch (e) { alert("Falha na ligação."); }
                 setLoading(false);
             };
 
+            const updateField = async (id, data) => {
+                await db.collection(`${DATA_PATH}/reports`).doc(id).update(data);
+            };
+
+            const showQR = (c) => {
+                setQrModal(c);
+                setTimeout(() => {
+                    const el = document.getElementById("qr-box");
+                    if (el) {
+                        el.innerHTML = "";
+                        new QRCode(el, { text: window.location.href, width: 200, height: 200 });
+                    }
+                }, 200);
+            };
+
             // --- TELAS ---
-            
+
             if (view === 'welcome') return (
                 <div className="min-h-screen flex items-center justify-center p-6 animate-fade bg-slate-900">
-                    <div className="max-w-xl w-full glass-card text-center">
-                        <div className="flex justify-center gap-2 mb-6">
+                    <div className="max-w-xl w-full glass-card text-center relative">
+                        <div className="flex justify-center gap-3 mb-8">
                             <div className="selo-nr1">NR-1 VALIDADA</div>
-                            <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">CERTIFICADO RCH</div>
+                            <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-lg">CERTIFICADO RCH</div>
                         </div>
-                        <IconShield />
-                        <h1 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 mb-4 mt-4">Respeito ao Capital Humano</h1>
+                        <div className="text-blue-600 mb-6 flex justify-center"><Icons.Shield size={54}/></div>
+                        <h1 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 mb-4 leading-none">Respeito ao Capital Humano</h1>
                         
-                        <div className="bg-slate-50 p-5 rounded-2xl mb-8 border-l-4 border-emerald-500 text-left text-[11px] text-slate-500 italic leading-relaxed">
-                            "NR-1 Item 1.4.1: O empregador deve estabelecer mecanismos para que os trabalhadores comuniquem situações de riscos graves."
+                        <div className="bg-slate-50 p-6 rounded-2xl mb-10 border-l-4 border-emerald-600 text-left">
+                            <p className="text-[10px] font-black uppercase text-emerald-600 mb-2 italic tracking-widest leading-none">Base Legal NR-1 (GRO):</p>
+                            <p className="text-[11px] font-bold text-slate-500 leading-relaxed italic">
+                                "O empregador deve estabelecer mecanismos para que os trabalhadores comuniquem situações de riscos e participem na gestão de SST."
+                            </p>
                         </div>
 
                         <div className="text-left space-y-4">
-                            <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pesquisa de Empresa Cliente:</label>
-                            <input 
-                                type="text" 
-                                placeholder="Digite o nome da empresa..." 
-                                className="input-rch shadow-sm" 
-                                value={search} 
-                                onChange={e => setSearch(e.target.value)} 
-                            />
-                            <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex items-center gap-2"><Icons.Search size={14}/> Pesquisa de Empresa Cliente:</label>
+                            <input type="text" placeholder="Digite o nome..." className="input-rch shadow-lg" value={search} onChange={e => setSearch(e.target.value)} />
+                            <div className="space-y-3 pt-2">
                                 {results.map(c => (
-                                    <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full bg-slate-50 p-4 rounded-xl flex items-center justify-between hover:bg-blue-600 hover:text-white transition-all">
-                                        <span className="font-black uppercase text-xs">{c.name}</span>
-                                        <span>➔</span>
+                                    <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full bg-white border border-slate-100 p-5 rounded-3xl flex items-center justify-between hover:bg-blue-600 hover:text-white transition-all group shadow-sm">
+                                        <div className="text-left"><span className="font-black uppercase text-sm">{c.name}</span><p className="text-[8px] font-black mt-1 opacity-50 uppercase leading-none group-hover:text-white">Canal Auditado NR-1</p></div>
+                                        <span className="font-bold">➔</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
-                        <button onClick={() => setView('admin-login')} className="mt-10 text-[9px] font-black text-slate-300 uppercase italic">Acesso Auditoria</button>
+                        <button onClick={() => setView('admin-login')} className="mt-14 text-[10px] font-black text-slate-300 uppercase italic">Acesso Auditoria Independente</button>
                     </div>
                 </div>
             );
 
             if (view === 'form') return (
                 <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-                    <div className="max-w-xl w-full bg-white rounded-[2rem] shadow-xl overflow-hidden text-left">
-                        <header className="bg-slate-900 p-6 text-white flex justify-between items-center text-left">
-                            <div className="text-left"><h2 className="text-lg font-black uppercase">{activeCompany.name}</h2><p className="text-[9px] text-blue-400 uppercase font-bold">Protocolo Ético de SST</p></div>
-                            <button onClick={() => setView('welcome')} className="text-white text-xl">✕</button>
+                    <div className="max-w-2xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden text-left">
+                        <header className="bg-slate-900 p-8 text-white flex justify-between items-center text-left leading-none">
+                            <div className="text-left"><h2 className="text-xl font-black uppercase italic leading-none">{activeCompany.name}</h2><p className="text-[9px] text-blue-400 font-bold uppercase mt-2 tracking-widest italic">Protocolo Ético de SST</p></div>
+                            <button onClick={() => setView('welcome')} className="text-white text-2xl font-bold">✕</button>
                         </header>
-                        <form onSubmit={submitRelato} className="p-8 space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-[10px] font-black text-slate-400 block mb-1">Unidade *</label><input name="unidade" required className="input-rch" /></div>
-                                <div><label className="text-[10px] font-black text-slate-400 block mb-1">Data *</label><input type="date" name="dataOcorrencia" required className="input-rch" /></div>
+                        <form onSubmit={submitRelato} className="p-8 space-y-8">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div><label className="text-[10px] font-black text-slate-400 block mb-2 italic ml-2">Unidade *</label><input name="unidade" required className="input-rch" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 block mb-2 italic ml-2">Data do Fato *</label><input type="date" name="dataOcorrencia" required className="input-rch" /></div>
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
-                                <p className="text-[10px] font-black text-slate-400 uppercase">Identificação</p>
-                                <div className="flex gap-2">
-                                    <button type="button" onClick={() => setIsIdentified(false)} className={`flex-1 py-3 rounded-lg font-black text-[10px] ${!isIdentified ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'}`}>Anónimo</button>
-                                    <button type="button" onClick={() => setIsIdentified(true)} className={`flex-1 py-3 rounded-lg font-black text-[10px] ${isIdentified ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'}`}>Identificado</button>
+                            <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
+                                <p className="text-[10px] font-black text-slate-400 uppercase italic ml-2">Identificação</p>
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setIsIdentified(false)} className={`flex-1 py-4 rounded-xl font-black text-[10px] ${!isIdentified ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}>Anónimo</button>
+                                    <button type="button" onClick={() => setIsIdentified(true)} className={`flex-1 py-4 rounded-xl font-black text-[10px] ${isIdentified ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}>Identificado</button>
                                 </div>
-                                {isIdentified && <input name="nomeRelator" required className="input-rch bg-white" placeholder="Seu Nome" />}
+                                {isIdentified && <input name="nomeRelator" required className="input-rch bg-white" placeholder="Seu Nome Completo" />}
                             </div>
-                            <textarea name="relato" required className="input-rch h-40 normal-case font-medium text-sm" placeholder="O Seu Relato..."></textarea>
-                            <button type="submit" disabled={loading} className="btn-rch py-4">{loading ? "A Enviar..." : "Protocolar Denúncia"}</button>
+                            <textarea name="relato" required className="input-rch h-48 normal-case font-medium text-sm leading-relaxed" placeholder="Descreva os fatos detalhadamente..."></textarea>
+                            <button type="submit" disabled={loading} className="btn-rch py-5 text-lg shadow-2xl shadow-blue-500/30">{loading ? "Processando..." : "Protocolar Denúncia"}</button>
                         </form>
                     </div>
                 </div>
@@ -235,123 +270,47 @@
 
             if (view === 'success') return (
                 <div className="h-screen flex flex-col items-center justify-center text-center p-10 bg-slate-900 text-white">
-                    <h2 className="text-3xl font-black uppercase mb-4">Protocolado</h2>
-                    <div className="bg-white p-8 rounded-[2rem] mb-10 shadow-2xl">
-                        <p className="text-[10px] text-slate-400 mb-2 uppercase font-black">Código RCH</p>
-                        <p className="text-4xl font-black text-blue-600 tracking-tighter">{protocolCode}</p>
+                    <h2 className="text-5xl font-black uppercase mb-4 leading-none italic">Protocolado</h2>
+                    <div className="bg-white p-10 rounded-[3rem] mb-12 shadow-2xl scale-110">
+                        <p className="text-[10px] font-black text-slate-400 mb-3 uppercase tracking-widest leading-none">Protocolo RCH Digital</p>
+                        <p className="text-5xl font-black text-blue-600 tracking-tighter leading-none">{lastProtocol}</p>
                     </div>
-                    <button onClick={() => window.location.reload()} className="btn-rch max-w-xs">Sair</button>
+                    <button onClick={() => window.location.reload()} className="btn-rch max-w-xs py-5 text-lg">Finalizar</button>
                 </div>
             );
 
             if (view === 'admin-login') return (
                 <div className="h-screen flex items-center justify-center p-6 bg-slate-900 text-center">
                     <div className="max-w-xs w-full glass-card">
-                        <h2 className="text-xl font-black uppercase text-slate-900 mb-8">Painel Auditora</h2>
-                        <input type="password" className="input-rch text-center text-3xl mb-8 font-black" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
-                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Incorreta")} className="btn-rch">Entrar</button>
-                        <button onClick={() => setView('welcome')} className="mt-8 text-[9px] font-black text-slate-400 uppercase italic">Voltar</button>
+                        <h2 className="text-xl font-black uppercase italic mb-8">Painel Auditora</h2>
+                        <input type="password" className="input-rch text-center text-4xl mb-10 tracking-[0.4em] font-black" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
+                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Palavra-passe errada")} className="btn-rch py-4">Aceder</button>
+                        <button onClick={() => setView('welcome')} className="mt-10 text-[9px] font-black text-slate-400 uppercase italic">Voltar</button>
                     </div>
                 </div>
             );
 
             if (view === 'admin-dash') return (
                 <div className="min-h-screen bg-slate-50 text-slate-900 p-6 text-left">
-                    <header className="max-w-6xl mx-auto flex justify-between items-center mb-8 no-print">
-                        <div className="text-left leading-none"><h2 className="text-xl font-black uppercase">Admin RCH 360</h2><p className="text-[10px] text-blue-600 font-bold uppercase mt-1">Gestão Independente Daiana Freitas</p></div>
-                        <div className="flex gap-2">
-                             <button onClick={() => setAdminTab('reports')} className={`px-4 py-2 rounded-lg font-black text-[9px] uppercase ${adminTab === 'reports' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Relatos</button>
-                             <button onClick={() => setAdminTab('folders')} className={`px-4 py-2 rounded-lg font-black text-[9px] uppercase ${adminTab === 'folders' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Pastas</button>
-                             <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-lg font-black text-[9px] uppercase ${adminTab === 'companies' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Empresas</button>
-                             <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-black text-[9px] uppercase">Sair</button>
+                    <header className="max-w-7xl mx-auto flex justify-between items-center mb-10 no-print text-left leading-none">
+                        <div className="text-left flex items-center gap-4">
+                            <div className="bg-slate-900 p-3 rounded-2xl text-white"><Icons.Shield size={24}/></div>
+                            <div className="text-left leading-none">
+                                <h2 className="text-xl font-black uppercase leading-none">Auditoria RCH 360</h2>
+                                <p className="text-[10px] text-blue-600 font-bold uppercase mt-1 tracking-widest">Consola Daiana Freitas</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
+                             <button onClick={() => setAdminTab('reports')} className={`px-5 py-2 rounded-xl font-black text-[9px] uppercase ${adminTab === 'reports' ? 'bg-blue-600 text-white' : 'bg-white shadow-sm'}`}>Relatos</button>
+                             <button onClick={() => setAdminTab('companies')} className={`px-5 py-2 rounded-xl font-black text-[9px] uppercase ${adminTab === 'companies' ? 'bg-blue-600 text-white' : 'bg-white shadow-sm'}`}>Empresas</button>
+                             <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 px-5 py-2 rounded-xl font-black text-[9px] uppercase italic">Sair</button>
                         </div>
                     </header>
 
-                    <main className="max-w-6xl mx-auto text-left">
+                    <main className="max-w-7xl mx-auto">
                         {adminTab === 'companies' && (
-                            <div className="bg-white p-8 rounded-3xl shadow-sm text-left no-print">
-                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6">Cadastrar Cliente</h3>
+                            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm text-left no-print border border-slate-200">
+                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-8">Ativar Canal Cliente</h3>
                                 <form onSubmit={async (e) => {
                                     e.preventDefault();
                                     const fd = new FormData(e.target);
-                                    await db.collection(`${DATA_PATH}/companies`).add({
-                                        name: fd.get('nome').toUpperCase(),
-                                        dataTreino: fd.get('dataTreino'),
-                                        vencimento: fd.get('vencimento')
-                                    });
-                                    e.target.reset();
-                                    alert("Ativado!");
-                                }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <input name="nome" required className="input-rch" placeholder="NOME EMPRESA" />
-                                    <input type="date" name="dataTreino" required className="input-rch" />
-                                    <input type="date" name="vencimento" required className="input-rch" />
-                                    <button type="submit" className="md:col-span-3 btn-rch">Registrar</button>
-                                </form>
-                            </div>
-                        )}
-
-                        {adminTab === 'folders' && (
-                            <div className="bg-white p-8 rounded-3xl shadow-sm text-left no-print">
-                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6">Criar Pasta de Trabalho</h3>
-                                <form onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    const name = e.target.fn.value.toUpperCase();
-                                    await db.collection(`${DATA_PATH}/folders`).add({ name });
-                                    e.target.reset();
-                                }} className="flex gap-4">
-                                    <input name="fn" required className="flex-1 input-rch" placeholder="NOME DA PASTA (Ex: Urgentes)" />
-                                    <button type="submit" className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px]">Criar</button>
-                                </form>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                                    {folders.map(f => (
-                                        <div key={f.id} className="bg-slate-50 p-4 rounded-xl flex justify-between items-center">
-                                            <span className="text-[10px] font-black uppercase">{f.name}</span>
-                                            <button onClick={() => db.collection(`${DATA_PATH}/folders`).doc(f.id).delete()} className="text-red-500 font-black">✕</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {adminTab === 'reports' && (
-                            <div className="space-y-6">
-                                <button onClick={() => window.print()} className="bg-slate-900 text-white px-6 py-3 rounded-lg font-black text-[9px] uppercase no-print">Imprimir PDF</button>
-                                {companies.map(emp => {
-                                    const empReports = reports.filter(r => r.empresaId === emp.id || r.empresaName === emp.name);
-                                    if(empReports.length === 0) return null;
-                                    return (
-                                        <div key={emp.id} className="bg-white rounded-3xl border p-6 text-left report-box">
-                                            <h3 className="text-2xl font-black uppercase italic mb-6 border-b pb-4">{emp.name}</h3>
-                                            {empReports.map(r => (
-                                                <div key={r.id} className="mb-8 p-6 bg-slate-50 rounded-2xl border-l-8 border-blue-600">
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        <div className="text-left"><p className="text-[9px] font-black text-blue-600 uppercase">Protocolo: {r.protocolo}</p><p className="text-[8px] opacity-50 uppercase">Data: {new Date(r.dataProtocolo).toLocaleDateString()}</p></div>
-                                                        <div className="no-print"><button onClick={() => db.collection(`${DATA_PATH}/reports`).doc(r.id).delete()} className="text-red-500">Apagar</button></div>
-                                                    </div>
-                                                    <div className="grid md:grid-cols-2 gap-4 text-left">
-                                                        <div className="bg-white p-4 rounded-xl"><p className="text-[9px] font-black uppercase text-slate-400 mb-2">Abertura Auditoria</p><div className="space-y-2"><input className="w-full p-2 bg-slate-50 rounded text-xs no-print" placeholder="Nº Ocorrência" defaultValue={r.numOcorrencia} onBlur={(e) => db.collection(`${DATA_PATH}/reports`).doc(r.id).update({numOcorrencia: e.target.value})} /><p className="print-only text-xs">Nº: {r.numOcorrencia}</p></div></div>
-                                                        <div className="bg-white p-4 rounded-xl"><p className="text-[9px] font-black uppercase text-slate-400 mb-2">Depoimento</p><p className="text-xs italic font-medium">"{r.relato}"</p></div>
-                                                    </div>
-                                                    <div className="mt-4 bg-white p-4 rounded-xl no-print text-left"><p className="text-[9px] font-black uppercase text-emerald-600 mb-2">Conclusão Técnica</p><textarea className="w-full p-2 bg-slate-50 rounded text-xs h-20" placeholder="Parecer Final..." defaultValue={r.conclusaoTecnica} onBlur={(e) => db.collection(`${DATA_PATH}/reports`).doc(r.id).update({conclusaoTecnica: e.target.value})}></textarea></div>
-                                                    <div className="print-only mt-6 pt-6 border-t border-dashed border-slate-300">
-                                                        <p className="text-[10px] font-black uppercase mb-2">Assinatura Auditoria (RCH): ________________________</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </main>
-                </div>
-            );
-
-            return null;
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
