@@ -1,2 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enterprise RCH | Auditoria 360 & NR-1</title>
+    
+    <!-- Scripts de Base (Versões de Alta Estabilidade) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Firebase e QR Code -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-     
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #0f172a; 
+            margin: 0;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-card { 
+            background: #ffffff; 
+            border-radius: 2rem; 
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-rch { 
+            width: 100%; 
+            padding: 1rem; 
+            background-color: #f1f5f9; 
+            border-radius: 1rem; 
+            border: 2px solid transparent; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            outline: none;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .input-rch:focus { border-color: #2563eb; background-color: white; }
+
+        .btn-rch { 
+            background-color: #2563eb; 
+            color: white; 
+            font-weight: 800; 
+            padding: 1rem; 
+            border-radius: 1rem; 
+            text-transform: uppercase; 
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-rch:active { transform: scale(0.97); }
+
+        .selo-nr1 {
+            background: linear-gradient(135deg, #065f46, #059669);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; padding: 0 !important; }
+            .report-box { border: 2px solid #000 !important; padding: 30px !important; margin-bottom: 30px !important; page-break-inside: avoid; background: white !important; border-radius: 0 !important; }
+            .signature-line { border-top: 2px solid #000; width: 240px; text-align: center; margin-top: 50px; font-weight: bold; font-size: 10px; }
+        }
+
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <!-- Loader de Estabilidade (Garante que o utilizador não veja tela preta) -->
+        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; background: #0f172a; color: white; flex-direction: column; text-align: center; padding: 20px;">
+            <div style="width: 45px; height: 45px; border: 5px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 25px;"></div>
+            <h1 style="font-weight: 900; letter-spacing: 3px; font-size: 18px; margin-bottom: 10px;">RCH AUDITORIA</h1>
+            <p style="font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;">A carregar portal de segurança...</p>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Ícones em SVG (Construídos no código para evitar falhas de carregamento externo)
+        const Icons = {
+            Shield: ({size=50, color="#2563eb"}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{margin: '0 auto 20px'}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            ),
+            Folder: ({size=20}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            ),
+            Trash: () => (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            ),
+            Print: () => (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            )
+        };
+
+        const firebaseConfig = {
+            authDomain: "respeito-capital-humano-df.firebaseapp.com",
+            projectId: "respeito-capital-humano-df",
+            storageBucket: "respeito-capital-humano-df.firebasestorage.app",
+            messagingSenderId: "1062425708099",
+            appId: "1:1062425708099:web:260cfa86f5112a5b3cf6f6"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+        const DATA_PATH = 'artifacts/respeito-capital-humano-df/public/data';
+
+        const App = () => {
+            const [view, setView] = useState('welcome');
+            const [companies, setCompanies] = useState([]);
+            const [reports, setReports] = useState([]);
+            const [folders, setFolders] = useState([]);
+            const [search, setSearch] = useState('');
+            const [activeCompany, setActiveCompany] = useState(null);
+            const [adminPass, setAdminPass] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [adminTab, setAdminTab] = useState('reports');
+            const [protocol, setProtocol] = useState('');
+            const [isIdentified, setIsIdentified] = useState(false);
+            const [qrTarget, setQrTarget] = useState(null);
+            const [expandedEmp, setExpandedEmp] = useState(null);
+
+            useEffect(() => {
+                firebase.auth().signInAnonymously().then(() => {
+                    db.collection(`${DATA_PATH}/companies`).onSnapshot(s => setCompanies(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                    db.collection(`${DATA_PATH}/reports`).onSnapshot(s => setReports(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                    db.collection(`${DATA_PATH}/folders`).onSnapshot(s => setFolders(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                });
+            }, []);
+
+            const filteredResults = useMemo(() => {
+                const t = search.toLowerCase().trim();
+                return t.length >= 2 ? companies.filter(c => c.name.toLowerCase().includes(t)) : [];
+            }, [search, companies]);
+
+            const submitRelato = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                const fd = new FormData(e.target);
+                const p = 'RCH-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+                try {
+                    await db.collection(`${DATA_PATH}/reports`).add({
+                        protocolo: p,
+                        empresaName: activeCompany.name,
+                        empresaId: activeCompany.id,
+                        unidade: fd.get('unidade'),
+                        dataOcorrencia: fd.get('dataOcorrencia'),
+                        identidade: isIdentified ? 'IDENTIFICADO' : 'ANÓNIMO',
+                        nomeRelator: fd.get('nomeRelator') || 'CONFIDENCIAL',
+                        relato: fd.get('relato'),
+                        contato: fd.get('contato') || 'NENHUM',
+                        status: 'ABERTO',
+                        folderId: 'default',
+                        dataProtocolo: new Date().toISOString()
+                    });
+                    setProtocol(p);
+                    setView('success');
+                } catch (e) { alert("Erro de Rede. Verifique a ligação."); }
+                setLoading(false);
+            };
+
+            const updateRep = async (id, data) => { await db.collection(`${DATA_PATH}/reports`).doc(id).update(data); };
+
+            const showQR = (c) => {
+                setQrTarget(c);
+                setTimeout(() => {
+                    const el = document.getElementById("qr-box");
+                    if (el) {
+                        el.innerHTML = "";
+                        new QRCode(el, { text: window.location.href, width: 180, height: 180 });
+                    }
+                }, 150);
+            };
+
+            // --- TELAS ---
+
+            if (view === 'welcome') return (
+                <div className="min-h-screen flex items-center justify-center p-6 animate-fade bg-slate-900 text-left">
+                    <div className="max-w-xl w-full glass-card text-center">
+                        <div className="flex justify-center gap-2 mb-8">
+                            <div className="selo-nr1">NR-1 VALIDADA</div>
+                            <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-lg">CERTIFICADO RCH</div>
+                        </div>
+                        <Icons.Shield />
+                        <h1 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 mb-4 leading-none">Respeito ao Capital Humano</h1>
+                        
+                        <div className="bg-slate-50 p-6 rounded-2xl mb-10 border-l-4 border-emerald-600 text-left italic text-[11px] text-slate-500">
+                            "NR-1 Item 1.4.1 g): O empregador deve estabelecer mecanismos para que os trabalhadores comuniquem situações de riscos graves e participem na gestão de SST."
+                        </div>
+
+                        <div className="text-left space-y-4">
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Pesquisa de Empresa Cliente:</label>
+                            <input type="text" placeholder="Digite o nome..." className="input-rch shadow-sm" value={search} onChange={e => setSearch(e.target.value)} />
+                            <div className="space-y-3 mt-4">
+                                {filteredResults.map(c => (
+                                    <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full bg-slate-50 p-6 rounded-3xl flex items-center justify-between hover:bg-blue-600 hover:text-white transition-all group shadow-sm text-left">
+                                        <div className="text-left leading-none"><span className="font-black uppercase text-sm leading-none">{c.name}</span><p className="text-[8px] font-black mt-1 opacity-40 uppercase group-hover:text-white leading-none">Canal Auditado NR-1</p></div>
+                                        <span className="font-bold">➔</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <button onClick={() => setView('admin-login')} className="mt-14 text-[9px] font-black text-slate-300 uppercase italic tracking-widest">Painel Administrativo</button>
+                    </div>
+                </div>
+            );
+
+            if (view === 'form') return (
+                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+                    <div className="max-w-xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden text-left">
+                        <header className="bg-slate-900 p-8 text-white flex justify-between items-center text-left leading-none">
+                            <div className="text-left leading-none"><h2 className="text-xl font-black uppercase italic leading-none">{activeCompany.name}</h2><p className="text-[9px] text-blue-400 font-bold uppercase mt-1 leading-none">Protocolo Ético de SST</p></div>
+                            <button onClick={() => setView('welcome')} className="text-white text-2xl font-bold p-2">✕</button>
+                        </header>
+                        <form onSubmit={submitRelato} className="p-8 space-y-6 text-left">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="text-[10px] font-black text-slate-400 mb-1 block italic ml-2">Unidade *</label><input name="unidade" required className="input-rch" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 mb-1 block italic ml-2">Data *</label><input type="date" name="dataOcorrencia" required className="input-rch" /></div>
+                            </div>
+                            <div className="bg-slate-50 p-6 rounded-2xl space-y-4">
+                                <p className="text-[10px] font-black text-slate-400 uppercase italic ml-2 text-left">Identificação</p>
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setIsIdentified(false)} className={`flex-1 py-3 rounded-xl font-black text-[10px] ${!isIdentified ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'}`}>Anónimo</button>
+                                    <button type="button" onClick={() => setIsIdentified(true)} className={`flex-1 py-3 rounded-xl font-black text-[10px] ${isIdentified ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'}`}>Identificado</button>
+                                </div>
+                                {isIdentified && <input name="nomeRelator" required className="input-rch bg-white" placeholder="Seu Nome Completo" />}
+                            </div>
+                            <textarea name="relato" required className="input-rch h-48 normal-case font-medium text-sm leading-relaxed" placeholder="Descreva os factos detalhadamente..."></textarea>
+                            <button type="submit" disabled={loading} className="btn-rch py-5 text-lg shadow-xl shadow-blue-500/20">{loading ? "Processando..." : "Protocolar Denúncia"}</button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            if (view === 'success') return (
+                <div className="h-screen flex flex-col items-center justify-center text-center p-10 bg-slate-900 text-white">
+                    <h2 className="text-4xl font-black uppercase italic mb-4 leading-none">Recebido</h2>
+                    <div className="bg-white p-10 rounded-[3rem] mb-12 shadow-2xl scale-110">
+                        <p className="text-[10px] text-slate-400 mb-2 uppercase font-black">Protocolo RCH Digital</p>
+                        <p className="text-5xl font-black text-blue-600 tracking-tighter leading-none">{protocol}</p>
+                    </div>
+                    <button onClick={() => window.location.reload()} className="btn-rch max-w-xs py-5">Sair e Finalizar</button>
+                </div>
+            );
+
+            if (view === 'admin-login') return (
+                <div className="h-screen flex items-center justify-center p-6 bg-slate-900 text-center">
+                    <div className="max-w-xs w-full glass-card text-center">
+                        <Icons.Lock />
+                        <h2 className="text-xl font-black uppercase italic mb-8 leading-none">Painel Auditora</h2>
+                        <input type="password" className="input-rch text-center text-4xl mb-10 tracking-[0.4em] font-black" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
+                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Incorreta")} className="btn-rch py-4">Aceder</button>
+                        <button onClick={() => setView('welcome')} className="mt-8 text-[9px] font-black text-slate-300 uppercase italic">Voltar ao Início</button>
+                    </div>
+                </div>
+            );
+
+            if (view === 'admin-dash') return (
+                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 text-left">
+                    <header className="max-w-7xl mx-auto flex justify-between items-center mb-10 no-print text-left leading-none">
+                        <div className="text-left flex items-center gap-4 text-left leading-none">
+                            <div className="bg-slate-900 p-2.5 rounded-xl text-white shadow-md"><Icons.Shield color="white" size={32}/></div>
+                            <div className="text-left leading-none">
+                                <h2 className="text-xl font-black uppercase leading-none text-left">Consola RCH 360</h2>
+                                <p className="text-[10px] text-blue-600 font-bold uppercase mt-1 tracking-widest text-left leading-none">Gestão Daiana Freitas</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
+                             <button onClick={() => setAdminTab('reports')} className={`px-4 py-2 rounded-xl font-black text-[9px] uppercase ${adminTab === 'reports' ? 'bg-blue-600 text-white' : 'bg-white shadow-sm'}`}>Relatos</button>
+                             <button onClick={() => setAdminTab('folders')} className={`px-4 py-2 rounded-xl font-black text-[9px] uppercase ${adminTab === 'folders' ? 'bg-blue-600 text-white' : 'bg-white shadow-sm'}`}>Pastas</button>
+                             <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl font-black text-[9px] uppercase ${adminTab === 'companies' ? 'bg-blue-600 text-white' : 'bg-white shadow-sm'}`}>Empresas</button>
+                             <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-black text-[9px] uppercase italic">Sair</button>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto text-left">
+                        {adminTab === 'folders' && (
+                            <div className="bg-white p-8 rounded-[2rem] shadow-sm text-left no-print border border-slate-200">
+                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-8 tracking-widest text-left">Gestão de Pastas de Auditoria</h3>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const name = e.target.fn.value.toUpperCase();
+                                    if(!name) return;
+                                    await db.collection(`${DATA_PATH}/folders`).add({ name: name });
+                                    e.target.reset();
+                                }} className="flex flex-col md:flex-row gap-4">
+                                    <input name="fn" required className="flex-1 input-rch shadow-inner" placeholder="Ex: Urgentes, Analisados, SST" />
+                                    <button type="submit" className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-[10px]">Criar Pasta</button>
+                                </form>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 text-left">
+                                    {folders.map(f => (
+                                        <div key={f.id} className="bg-slate-50 p-5 rounded-2xl flex justify-between items-center group shadow-sm text-left">
+                                            <div className="flex items-center gap-3 text-left leading-none"><Icons.Folder size={18}/><span className="text-[10px] font-black uppercase leading-none">{f.name}</span></div>
+                                            <button onClick={() => db.collection(`${DATA_PATH}/folders`).doc(f.id).delete()} className="text-slate-200 group-hover:text-red-500 transition-colors"><Icons.Trash/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {adminTab === 'companies' && (
+                            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm text-left no-print border border-slate-200">
+                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-8 tracking-widest text-left leading-none">Ativar Empresa Cliente</h3>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const fd = new FormData(e.target);
+                                    await db.collection(`${DATA_PATH}/companies`).add({
+                                        name: fd.get('nome').toUpperCase(),
+                                        dataTreino: fd.get('dataTreino'),
+                                        vencimento: fd.get('vencimento')
+                                    });
+                                    e.target.reset();
+                                    alert("Canal Ativado!");
+                                }} className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left leading-none">
+                                    <input name="nome" required className="input-rch shadow-inner" placeholder="NOME EMPRESA" />
+                                    <input type="date" name="dataTreino" required className="input-rch shadow-inner" />
+                                    <input type="date" name="vencimento" required className="input-rch shadow-inner" />
+                                    <button type="submit" className="btn-rch py-4 text-[10px] shadow-lg shadow-blue-500/20">Registrar</button>
+                                </form>
+                                <div className="grid md:grid-cols-3 gap-6 mt-12 text-left leading-none">
+                                    {companies.map(c => (
+                                        <div key={c.id} className="bg-slate-50 p-6 rounded-3xl border flex justify-between items-center text-left leading-none shadow-sm relative">
+                                            <div className="text-left leading-none"><span className="text-[11px] font-black uppercase leading-none text-left">{c.name}</span><p className="text-[8px] mt-1 opacity-50 font-bold uppercase leading-none text-left">Expira: {new Date(c.vencimento).toLocaleDateString()}</p></div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => showQR(c)} className="p-2 bg-white rounded-lg border font-black text-[9px]">QR</button>
+                                                <button onClick={() => db.collection(`${DATA_PATH}/companies`).doc(c.id).delete()} className="text-red-500 font-bold p-2"><Icons.Trash/></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {adminTab === 'reports' && (
+                            <div className="space-y-10 text-left">
+                                <div className="flex justify-end no-print"><button onClick={() => window.print()} className="bg-slate-900 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase shadow-xl flex items-center gap-2"><Icons.Print/> Imprimir Dossiê PDF</button></div>
+                                
+                                {companies.map(emp => {
+                                    const empReports = reports.filter(r => r.empresaId === emp.id || r.empresaName === emp.name);
+                                    if(empReports.length === 0) return null;
+
+                                    return (
+                                        <div key={emp.id} className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden mb-10 text-left no-print-section">
+                                            <button onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)} className="w-full p-8 flex items-center justify-between hover:bg-slate-50 no-print text-left leading-none">
+                                                <div className="flex items-center gap-4 text-left leading-none"><div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-md"><Icons.Folder color="white" /></div><div className="text-left leading-none"><h3 className="text-xl font-black uppercase text-left leading-none">{emp.name}</h3><p className="text-[10px] font-bold text-slate-400 mt-2 uppercase text-left leading-none">{empReports.length} Ocorrências Registadas</p></div></div>
+                                                <span className="font-bold leading-none">{expandedEmp === emp.id ? '▲' : '▼'}</span>
+                                            </button>
+
+                                            <div className={`${expandedEmp === emp.id ? 'block' : 'hidden'} md:block p-10 pt-0 space-y-12 text-left`}>
+                                                {empReports.map(r => (
+                                                    <div key={r.id} className="bg-slate-50 p-10 md:p-14 rounded-[3.5rem] border-l-[25px] border-blue-600 relative report-box text-left print:border-l-0 print:p-0">
+                                                        <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10 border-b pb-10 text-left leading-none">
+                                                            <div className="text-left leading-none flex-1">
+                                                                <div className="flex items-center gap-4 mb-4 leading-none text-left"><span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase ${r.status === 'CONCLUÍDO' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>STATUS: {r.status}</span><span className="text-[9px] font-black text-slate-900 bg-slate-200 px-4 py-1 rounded-xl uppercase leading-none">PROTOCOLO: {r.protocolo}</span></div>
+                                                                <h4 className="text-4xl font-black uppercase tracking-tighter text-slate-900 leading-none mb-8 text-left">{emp.name}</h4>
+                                                                
+                                                                <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 space-y-4 no-print text-left">
+                                                                    <h5 className="text-[10px] font-black uppercase text-blue-600 leading-none">1. Abertura de Inquérito Auditoria</h5>
+                                                                    <div className="grid grid-cols-3 gap-6 text-left leading-none">
+                                                                        <div className="text-left leading-none"><label className="text-[8px] font-black uppercase text-slate-400 mb-1 block">Nº Ocorrência</label><input className="input-rch h-10 py-0 text-xs shadow-inner" placeholder="Ex: 001/26" defaultValue={r.numOcorrencia} onBlur={(e) => updateRep(r.id, { numOcorrencia: e.target.value })} /></div>
+                                                                        <div className="text-left leading-none"><label className="text-[8px] font-black uppercase text-slate-400 mb-1 block">Data Abertura</label><input type="date" className="input-rch h-10 py-0 text-xs shadow-inner" defaultValue={r.dataAberturaAdmin} onBlur={(e) => updateRep(r.id, { dataAberturaAdmin: e.target.value, status: 'EM ANÁLISE' })} /></div>
+                                                                        <div className="text-left leading-none"><label className="text-[8px] font-black uppercase text-slate-400 mb-1 block text-left">Prazo Final</label><input type="date" className="input-rch h-10 py-0 text-xs shadow-inner" defaultValue={r.prazoFechamento} onBlur={(e) => updateRep(r.id, { prazoFechamento: e.target.value })} /></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col gap-3 no-print">
+                                                                <select 
+                                                                    className="bg-white p-3 rounded-2xl text-[9px] font-black uppercase outline-none border border-slate-200 shadow-sm"
+                                                                    onChange={(e) => updateRep(r.id, { folderId: e.target.value })}
+                                                                    value={r.folderId}
+                                                                >
+                                                                    <option value="default">Mover p/ Pasta...</option>
+                                                                    {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                                                </select>
+                                                                <button onClick={() => db.collection(`${DATA_PATH}/reports`).doc(r.id).delete()} className="text-red-500 font-bold uppercase text-[9px] leading-none text-right px-2">✕ Apagar Relato</button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid md:grid-cols-3 gap-12 mb-12 text-left leading-none">
+                                                            <div className="md:col-span-2 space-y-8 text-left leading-none">
+                                                                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-left leading-none"><p className="text-[11px] font-black text-slate-400 uppercase mb-4 italic text-left leading-none">Depoimento Auditado:</p><p className="text-lg font-bold text-slate-700 italic leading-relaxed text-left leading-tight">"{r.relato}"</p></div>
+                                                                <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 space-y-6 text-left no-print">
+                                                                    <h5 className="text-[10px] font-black uppercase text-emerald-600 leading-none">2. Encerramento e Parecer Técnico</h5>
+                                                                    <div className="space-y-6 text-left leading-none">
+                                                                        <div className="text-left leading-none"><label className="text-[8px] font-black uppercase text-slate-400 block mb-1">Data de Encerramento</label><input type="date" className="input-rch h-12 text-xs shadow-inner" defaultValue={r.dataFechamentoAdmin} onBlur={(e) => updateRep(r.id, { dataFechamentoAdmin: e.target.value, status: 'CONCLUÍDO' })} /></div>
+                                                                        <div className="text-left leading-none"><label className="text-[8px] font-black uppercase text-slate-400 block mb-1 text-left leading-none">Conclusão Final Auditoria</label><textarea className="input-rch h-32 py-4 normal-case font-medium text-sm shadow-inner" placeholder="Parecer técnico final..." defaultValue={r.conclusaoTecnica} onBlur={(e) => updateRep(r.id, { conclusaoTecnica: e.target.value })}></textarea></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="bg-slate-900 p-10 rounded-[3.5rem] text-white text-left flex flex-col justify-between shadow-xl leading-none h-full">
+                                                                <div className="space-y-8 text-left leading-none">
+                                                                    <p className="text-[10px] font-black text-blue-400 uppercase italic tracking-widest text-left leading-none">Inquérito Auditoria</p>
+                                                                    <div className="space-y-8 text-left leading-none">
+                                                                        <div className="text-left leading-none"><p className="text-[8px] opacity-40 uppercase leading-none mb-1 text-left">Identidade</p><p className="text-xs font-black text-left leading-none">{r.identidade}</p>{r.identidade === 'IDENTIFICADO' && <p className="text-[10px] text-blue-400 font-bold mt-1 uppercase text-left leading-none">{r.nomeRelator}</p>}</div>
+                                                                        <div className="text-left leading-none"><p className="text-[8px] opacity-40 uppercase leading-none mb-1 text-left">Local/Data Fato</p><p className="text-xs font-black text-left leading-none">{r.unidade}</p><p className="text-[10px] text-slate-300 mt-1 italic text-left leading-none">{new Date(r.dataOcorrencia).toLocaleDateString()}</p></div>
+                                                                        <div className="text-left leading-none"><p className="text-[8px] opacity-40 uppercase leading-none mb-1 text-left">Resposta Feedback</p><p className="text-xs font-black text-emerald-400 text-left leading-none">{r.contato}</p></div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="mt-12 pt-8 border-t border-white/10 opacity-30 italic text-[8px] text-left leading-none">Auditado RCH Enterprise</div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* ÁREA DE ASSINATURA NO PDF */}
+                                                        <div className="hidden print:block mt-20 p-12 border-2 border-slate-900 rounded-[3.5rem] text-left leading-none">
+                                                            <h5 className="text-[12px] font-black uppercase underline mb-8 text-left leading-none">Relatório de Auditoria Independente SST (NR-1)</h5>
+                                                            <div className="grid grid-cols-2 gap-12 text-[10px] font-bold uppercase text-left leading-none">
+                                                                <div className="space-y-4 text-left leading-none"><p className="text-left leading-none opacity-50 text-left leading-none">Ocorrência: {r.numOcorrencia || '---'}</p><p className="text-left leading-none opacity-50 text-left leading-none">Data Abertura: {r.dataAberturaAdmin ? new Date(r.dataAberturaAdmin).toLocaleDateString() : '---'}</p></div>
+                                                                <div className="space-y-4 text-left leading-none"><p className="text-left leading-none opacity-50 text-left leading-none">Encerramento: {r.dataFechamentoAdmin ? new Date(r.dataFechamentoAdmin).toLocaleDateString() : '---'}</p><p className="text-left leading-none italic font-black text-blue-600 text-left leading-none">Protocolo RCH: {r.protocolo}</p></div>
+                                                            </div>
+                                                            <div className="mt-10 pt-10 border-t border-slate-100 text-left leading-none"><p className="text-[10px] font-black uppercase text-slate-400 mb-4 italic text-left leading-none">Parecer Técnico:</p><p className="text-sm italic font-medium leading-relaxed text-left leading-tight">"{r.conclusaoTecnica || 'Em análise técnica pela auditoria independente.'}"</p></div>
+                                                            <div className="flex justify-between items-end mt-24 text-center leading-none">
+                                                                <div className="flex flex-col items-center leading-none"><div className="signature-line"></div><p className="text-[10px] font-black uppercase mt-4 italic leading-none text-center">Daiana Freitas (RCH)</p></div>
+                                                                <div className="flex flex-col items-center leading-none"><div className="signature-line"></div><p className="text-[10px] font-black uppercase mt-4 italic leading-none text-center">Compliance Empresa</p></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </main>
+
+                    {qrTarget && (
+                        <div className="fixed inset-0 bg-slate-900/95 flex items-center justify-center p-6 z-50 no-print">
+                            <div className="bg-white p-12 rounded-[3.5rem] text-center animate-fade max-w-sm w-full shadow-2xl"><h3 className="text-2xl font-black uppercase italic mb-8 leading-none">{qrTarget.name}</h3><div id="qr-box" className="mb-10 inline-block border-8 border-slate-50 p-4 rounded-[2rem]"></div><div className="flex gap-4"><button onClick={() => window.print()} className="btn-rch bg-slate-900 shadow-lg shadow-slate-900/20">Imprimir</button><button onClick={() => setQrTarget(null)} className="btn-rch bg-red-50 text-red-600">Fechar</button></div></div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            return null;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
