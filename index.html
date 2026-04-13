@@ -2,32 +2,40 @@
 <html lang="pt-pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canal RCH</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Canal de Ética | Respeito ao Capital Humano</title>
+    
+    <!-- Bibliotecas de Interface -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
-        body { background-color: #0f172a; color: white; font-family: sans-serif; }
-        .card { background: white; color: black; padding: 20px; border-radius: 15px; margin: 10px; }
-        .btn { background: #2563eb; color: white; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; margin: 0; }
+        .glass { background: rgba(255, 255, 255, 0.98); border-radius: 2.5rem; padding: 2.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .input-rch { width: 100%; padding: 1.25rem; background: #f1f5f9; border-radius: 1.25rem; border: 2px solid transparent; font-weight: 700; color: #0f172a; text-transform: uppercase; outline: none; transition: all 0.2s; font-size: 16px; }
+        .input-rch:focus { border-color: #2563eb; background: white; }
+        .btn-rch { width: 100%; background: #2563eb; color: white; font-weight: 800; padding: 1.25rem; border-radius: 1.25rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s; cursor: pointer; border: none; }
+        .btn-rch:active { transform: scale(0.95); opacity: 0.9; }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="p-6">
-    <div class="max-w-md mx-auto text-center">
-        <h1 class="text-2xl font-bold mb-4">RESPEITO AO CAPITAL HUMANO</h1>
-        <p class="text-blue-400 text-xs mb-8">Auditoria Independente</p>
+<body class="bg-slate-900 min-h-screen">
+    <div id="root"></div>
 
-        <div class="bg-blue-900/30 p-4 rounded-xl border border-blue-500 mb-8">
-            <p class="text-[10px] mb-2">ÁREA DA DAIANA:</p>
-            <button onclick="window.location.hash = '#admin'" class="bg-white text-blue-900 px-4 py-2 rounded font-bold text-xs">ABRIR PAINEL DE GESTÃO</button>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { Shield, Search, ChevronRight, CheckCircle, ShieldCheck, X, Trash2, Lock, Building2 } = lucide;
 
-        <input type="text" id="busca" placeholder="Pesquisar Empresa..." class="w-full p-4 rounded-xl text-black mb-4">
-        <div id="lista"></div>
-    </div>
-
-    <script>
         const firebaseConfig = {
             authDomain: "respeito-capital-humano-df.firebaseapp.com",
             projectId: "respeito-capital-humano-df",
@@ -35,30 +43,196 @@
             messagingSenderId: "1062425708099",
             appId: "1:1062425708099:web:260cfa86f5112a5b3cf6f6"
         };
-        firebase.initializeApp(firebaseConfig);
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
+        const auth = firebase.auth();
+        const DATA_PATH = 'artifacts/respeito-capital-humano-df/public/data';
 
-        // Lógica simples para mudar de tela
-        window.onhashchange = () => location.reload();
+        const App = () => {
+            const [view, setView] = useState('loading');
+            const [companies, setCompanies] = useState([]);
+            const [reports, setReports] = useState([]);
+            const [search, setSearch] = useState('');
+            const [activeCompany, setActiveCompany] = useState(null);
+            const [adminPass, setAdminPass] = useState('');
+            const [loading, setLoading] = useState(false);
 
-        if(window.location.hash === '#admin') {
-            const pass = prompt("Senha da Auditora:");
-            if(pass === 'df2026') {
-                document.body.innerHTML = `
-                    <div class="p-4">
-                        <button onclick="location.hash=''" class="mb-4">← Voltar</button>
-                        <h2 class="text-xl font-bold mb-4">PAINEL RCH</h2>
-                        <input id="new" placeholder="Nome da Empresa" class="p-4 text-black w-full rounded mb-2">
-                        <button onclick="db.collection('artifacts/respeito-capital-humano-df/public/data/companies').add({name: document.getElementById('new').value.toUpperCase()}); alert('Registada!');" class="btn">REGISTAR</button>
-                        <hr class="my-6 opacity-20">
-                        <div id="relatos"></div>
+            useEffect(() => {
+                auth.signInAnonymously().then(() => {
+                    db.collection(`${DATA_PATH}/companies`).onSnapshot(snap => {
+                        setCompanies(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                        setView('welcome');
+                    }, () => setView('welcome'));
+                    db.collection(`${DATA_PATH}/reports`).onSnapshot(snap => {
+                        setReports(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                    });
+                }).catch(() => setView('welcome'));
+            }, []);
+
+            const filtered = useMemo(() => {
+                const t = search.toLowerCase().trim();
+                return t ? companies.filter(c => c.name.toLowerCase().includes(t)) : [];
+            }, [search, companies]);
+
+            const handleReport = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                const fd = new FormData(e.target);
+                try {
+                    await db.collection(`${DATA_PATH}/reports`).add({
+                        empresa: activeCompany.name,
+                        unidade: fd.get('unidade'),
+                        relato: fd.get('relato'),
+                        contato: fd.get('contato') || 'Anónimo',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    setView('success');
+                } catch (e) { alert("Erro ao enviar."); }
+                setLoading(false);
+            };
+
+            if (view === 'loading') return (
+                <div className="h-screen flex flex-col items-center justify-center text-white px-6">
+                    <Shield size={64} className="text-blue-500 animate-bounce mb-6" />
+                    <p className="font-black uppercase tracking-[0.4em] text-[10px] opacity-50 italic">Carregando Portal RCH...</p>
+                </div>
+            );
+
+            if (view === 'welcome') return (
+                <div className="min-h-screen flex items-center justify-center p-6 animate-fade text-center leading-none">
+                    <div className="max-w-xl w-full glass relative z-10 border border-white/20">
+                        <div className="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-xl shadow-blue-500/20 leading-none">
+                            <Shield size={40} />
+                        </div>
+                        <h1 className="text-2xl font-black uppercase italic tracking-tighter leading-none text-slate-900">Respeito ao Capital Humano</h1>
+                        <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest mt-2 mb-10 italic leading-none">Auditoria Independente</p>
+                        
+                        <div className="text-left space-y-4">
+                            <label className="text-[10px] font-black uppercase text-slate-400 italic ml-4 leading-none">Encontre a sua empresa:</label>
+                            <input type="text" placeholder="Nome da empresa..." className="input-rch shadow-sm" value={search} onChange={e => setSearch(e.target.value)} />
+                            {search && (
+                                <div className="bg-white border rounded-2xl shadow-xl p-2 max-h-48 overflow-y-auto mt-2">
+                                    {filtered.length > 0 ? filtered.map(c => (
+                                        <button key={c.id} onClick={() => { setActiveCompany(c); setView('form'); }} className="w-full flex items-center justify-between p-5 rounded-2xl hover:bg-blue-600 hover:text-white transition-all text-left font-bold uppercase text-sm group leading-none">
+                                            <div className="flex items-center gap-3">
+                                                <Building2 size={18} className="opacity-20 group-hover:opacity-100" />
+                                                {c.name}
+                                            </div>
+                                            <ChevronRight size={18} />
+                                        </button>
+                                    )) : <div className="p-8 text-center text-slate-400 font-bold italic text-xs uppercase leading-none">Não registada</div>}
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-14 pt-8 border-t border-slate-100 flex justify-center items-center gap-3">
+                            <ShieldCheck size={22} className="text-blue-600" />
+                            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none italic">Protocolo Blindado RCH</span>
+                        </div>
+                        <button onClick={() => setView('admin-login')} className="mt-12 text-[9px] font-black text-slate-300 uppercase tracking-widest hover:text-blue-600 italic">Área Administrativa</button>
                     </div>
-                `;
-                db.collection('artifacts/respeito-capital-humano-df/public/data/reports').onSnapshot(s => {
-                    document.getElementById('relatos').innerHTML = s.docs.map(d => `<div class="card"><b>${d.data().empresa}</b><p>${d.data().relato}</p></div>`).join('');
-                });
-            } else { location.hash = ''; }
-        }
+                </div>
+            );
+
+            if (view === 'form') return (
+                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 md:p-10 animate-fade text-left leading-none">
+                    <div className="max-w-xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden text-slate-900 border border-slate-200">
+                        <header className="bg-slate-900 p-8 text-white flex justify-between items-center leading-none">
+                            <div className="text-left leading-none">
+                                <h2 className="text-lg font-black uppercase leading-none italic tracking-tight">{activeCompany.name}</h2>
+                                <p className="text-[9px] font-bold text-blue-400 uppercase mt-2 tracking-widest leading-none italic">Relato Seguro</p>
+                            </div>
+                            <button onClick={() => setView('welcome')} className="text-white bg-white/10 p-2 rounded-xl"><X size={24}/></button>
+                        </header>
+                        <form onSubmit={handleReport} className="p-8 md:p-12 space-y-8 text-left leading-none">
+                            <div className="text-left">
+                                <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 ml-2 italic tracking-widest leading-none">Unidade / Local *</label>
+                                <input name="unidade" required className="input-rch" placeholder="Ex: Matriz" />
+                            </div>
+                            <div className="text-left">
+                                <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 ml-2 italic tracking-widest leading-none">O Seu Relato *</label>
+                                <textarea name="relato" required className="input-rch h-56 normal-case font-medium text-sm leading-relaxed" placeholder="Descreva os factos..."></textarea>
+                            </div>
+                            <div className="text-left">
+                                <label className="text-[10px] font-black uppercase text-blue-600 block mb-3 ml-2 italic tracking-widest leading-none">Contacto (Opcional)</label>
+                                <input name="contato" className="input-rch border-blue-50 bg-blue-50/20" placeholder="WhatsApp ou E-mail" />
+                            </div>
+                            <button type="submit" disabled={loading} className="btn-rch shadow-lg">
+                                {loading ? "ENVIANDO..." : "PROTOCOLAR AGORA"}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            if (view === 'success') return (
+                <div className="h-screen flex flex-col items-center justify-center text-center p-10 text-white animate-fade bg-slate-900 leading-none">
+                    <CheckCircle size={100} className="text-blue-500 mb-8 animate-bounce leading-none" />
+                    <h2 className="text-5xl font-black uppercase italic mb-6 tracking-tighter leading-none">Enviado</h2>
+                    <p className="text-sm opacity-60 mb-14 font-bold uppercase tracking-[0.2em] max-w-xs mx-auto leading-relaxed text-center">Protocolo RCH registado com sucesso.</p>
+                    <button onClick={() => window.location.reload()} className="btn-rch max-w-xs px-16 py-6">Concluir</button>
+                </div>
+            );
+
+            if (view === 'admin-login') return (
+                <div className="h-screen flex items-center justify-center p-6 text-center animate-fade leading-none">
+                    <div className="max-w-xs w-full glass text-center border border-white/20">
+                        <Lock size={40} className="mx-auto mb-6 text-blue-600 leading-none" />
+                        <h2 className="text-xl font-black uppercase text-slate-900 mb-10 leading-none tracking-tighter">Painel Auditor</h2>
+                        <input type="password" className="input-rch text-center text-4xl mb-10 tracking-widest font-black leading-none" placeholder="••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} />
+                        <button onClick={() => adminPass === 'df2026' ? setView('admin-dash') : alert("Incorreta")} className="btn-rch shadow-lg">Entrar</button>
+                        <button onClick={() => setView('welcome')} className="mt-10 text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Voltar</button>
+                    </div>
+                </div>
+            );
+
+            if (view === 'admin-dash') return (
+                <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-12 text-left animate-fade leading-none">
+                    <header className="flex flex-col md:flex-row justify-between items-center mb-14 max-w-6xl mx-auto gap-8 text-left leading-none">
+                        <div className="flex items-center gap-5 text-left leading-none">
+                            <div className="bg-slate-900 p-3 rounded-2xl text-white shadow-xl shadow-slate-900/20 leading-none"><Shield size={32} /></div>
+                            <div className="text-left leading-none">
+                                <h2 className="text-2xl font-black uppercase italic leading-none tracking-tight text-left">Gestão Independente RCH</h2>
+                                <p className="text-[10px] font-bold text-blue-600 uppercase mt-2 tracking-widest leading-none text-left italic">Compliance & Auditoria</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setView('welcome')} className="bg-red-50 text-red-600 font-black text-[10px] uppercase px-10 py-4 rounded-2xl border border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-sm">Sair</button>
+                    </header>
+                    <main className="max-w-6xl mx-auto space-y-12">
+                        <div className="bg-white p-10 rounded-[3rem] shadow-xl border-t-8 border-blue-600">
+                            <h3 className="text-[10px] font-black uppercase italic text-slate-400 mb-6 tracking-widest leading-none text-left text-left">Activar Empresa Cliente</h3>
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <input id="nc" className="flex-grow p-5 bg-slate-50 rounded-2xl font-bold uppercase outline-none focus:border-blue-600 border-2 border-transparent shadow-inner text-lg leading-none" placeholder="NOME DA EMPRESA" />
+                                <button onClick={() => { const v = document.getElementById('nc').value; if(v) db.collection(`${DATA_PATH}/companies`).add({name: v.toUpperCase()}); document.getElementById('nc').value = ''; }} className="bg-blue-600 text-white px-14 py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all">Registar Canal</button>
+                            </div>
+                        </div>
+                        <div className="space-y-8 text-left">
+                            <h3 className="text-[10px] font-black uppercase italic text-slate-400 ml-4 tracking-widest leading-none">Relatos Registados ({reports.length})</h3>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
+                                {reports.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).map(r => (
+                                    <div key={r.id} className="bg-white p-8 rounded-[3rem] shadow-md border-l-[16px] border-l-blue-600 text-left relative group hover:shadow-2xl transition-all">
+                                        <button onClick={() => { if(confirm("Apagar?")) db.collection(`${DATA_PATH}/reports`).doc(r.id).delete(); }} className="absolute top-6 right-6 text-slate-100 group-hover:text-red-500 transition-colors"><Trash2 size={24}/></button>
+                                        <h4 className="font-black uppercase text-blue-600 mb-2 leading-none text-xl pr-10">{r.empresa}</h4>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase italic mb-6 leading-none tracking-wider">{r.unidade || 'Geral'}</p>
+                                        <div className="bg-slate-50 p-6 rounded-[2rem] text-sm font-bold text-slate-700 italic border border-slate-100 shadow-inner leading-relaxed">"{r.relato}"</div>
+                                        {r.contato && <p className="mt-3 text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none italic">Feedback: {r.contato}</p>}
+                                        <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center text-[9px] font-black uppercase text-slate-300 italic tracking-widest">
+                                            <span>{r.createdAt ? new Date(r.createdAt.seconds * 1000).toLocaleDateString() : 'Sinc...'}</span>
+                                            <span className="text-blue-600 opacity-60">Auditado RCH</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+
+            return null;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
